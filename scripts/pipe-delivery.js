@@ -117,6 +117,7 @@ function parseRawEmail(raw) {
     subject,
     bodyText: bodyText.trim(),
     bodyHtml: bodyHtml.trim(),
+    headersRaw: headerSection.trim(),
     sizeKb: Math.ceil(Buffer.byteLength(raw, 'utf8') / 1024),
   };
 }
@@ -157,7 +158,7 @@ async function main() {
           const mailbox = users[0];
 
           await connection.query(
-            "INSERT INTO webmail_messages (mailbox_id, folder, sender, sender_name, recipients, subject, body_html, body_text, is_read, size_kb) VALUES (?, 'inbox', ?, ?, ?, ?, ?, ?, 0, ?)",
+            "INSERT INTO webmail_messages (mailbox_id, folder, sender, sender_name, recipients, subject, body_html, body_text, headers_raw, is_read, size_kb) VALUES (?, 'inbox', ?, ?, ?, ?, ?, ?, ?, 0, ?)",
             [
               mailbox.id,
               parsed.sender,
@@ -166,6 +167,7 @@ async function main() {
               parsed.subject,
               parsed.bodyHtml,
               parsed.bodyText,
+              parsed.headersRaw,
               parsed.sizeKb,
             ]
           );

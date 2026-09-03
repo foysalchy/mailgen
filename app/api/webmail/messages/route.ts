@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
     let query = `
       SELECT m.id, m.mailbox_id, m.folder, m.sender, m.sender_name, m.recipients, m.subject, 
-             m.body_html, m.body_text, SUBSTRING(m.body_text, 1, 150) as snippet, 
+             m.body_html, m.body_text, m.headers_raw, SUBSTRING(m.body_text, 1, 150) as snippet, 
              m.has_attachments, m.is_read, m.is_starred, m.scheduled_at, m.is_scheduled, m.size_kb, m.created_at,
              (SELECT GROUP_CONCAT(cl.name, ':', cl.color) FROM message_labels ml JOIN custom_labels cl ON ml.label_id = cl.id WHERE ml.message_id = m.id) as labels
       FROM webmail_messages m

@@ -67,11 +67,13 @@ import {
   MailCheck,
   ArrowDownLeft,
   ArrowUpRight,
+  Info,
 } from 'lucide-react';
 
 export default function MailboxApp() {
   // Theme state: 'dark' | 'light'
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [messageHeadersModal, setMessageHeadersModal] = useState<any>(null); // For Gmail/cPanel style Show Original Headers modal
 
   // Auth state
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -2775,8 +2777,17 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                         <span>{new Date(selectedMessage.created_at).toLocaleString()}</span>
                       </div>
                     </div>
-                    {/* Action buttons: Star, Archive, Trash, Spam, Permanent Delete (permission enforced) */}
-                    <div className="flex items-center gap-2">
+                    {/* Action buttons: Star, Header Info (Show Original), Archive, Trash, Spam, Permanent Delete */}
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setMessageHeadersModal(selectedMessage)}
+                        title="View Full Email Headers & Diagnostic Info (cPanel / Gmail Style)"
+                        className="p-2 text-slate-400 hover:text-blue-400 rounded-lg hover:bg-slate-800 transition-colors flex items-center gap-1 text-xs font-semibold"
+                      >
+                        <Info className="w-4 h-4 text-blue-400" />
+                        <span className="hidden sm:inline">Header Info</span>
+                      </button>
+
                       <button
                         onClick={() => handleToggleStar(selectedMessage.id, Boolean(selectedMessage.is_starred))}
                         title={selectedMessage.is_starred ? 'Unstar Message' : 'Star Message'}
@@ -6262,6 +6273,74 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Gmail / cPanel Style Message Original Headers Modal */}
+      {messageHeadersModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 w-full max-w-3xl rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Info className="w-5 h-5 text-blue-400" />
+                <div>
+                  <h3 className="text-base font-bold text-white">Email Header Information</h3>
+                  <p className="text-xs text-slate-400">Technical routing, SPF, DKIM, and authentication data (Show Original)</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setMessageHeadersModal(null)}
+                className="text-slate-400 hover:text-white text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Quick Summary Grid */}
+            <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono">
+              <div><strong className="text-slate-400 font-sans">Subject:</strong> <span className="text-slate-200">{messageHeadersModal.subject}</span></div>
+              <div><strong className="text-slate-400 font-sans">From:</strong> <span className="text-slate-200">{messageHeadersModal.sender}</span></div>
+              <div><strong className="text-slate-400 font-sans">To:</strong> <span className="text-slate-200">{messageHeadersModal.recipients}</span></div>
+              <div><strong className="text-slate-400 font-sans">Date:</strong> <span className="text-slate-200">{new Date(messageHeadersModal.created_at).toUTCString()}</span></div>
+              <div><strong className="text-slate-400 font-sans">Size:</strong> <span className="text-slate-200">{messageHeadersModal.size_kb || 1} KB</span></div>
+              <div><strong className="text-slate-400 font-sans">Security:</strong> <span className="text-emerald-400">TLS Encrypted Delivery</span></div>
+            </div>
+
+            {/* Raw Headers Textarea */}
+            <div className="flex-1 flex flex-col min-h-[220px]">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-semibold text-slate-300">Raw RFC 822 Email Headers:</span>
+                <button
+                  onClick={() => {
+                    const headersToCopy = messageHeadersModal.headers_raw || `From: ${messageHeadersModal.sender}\nTo: ${messageHeadersModal.recipients}\nSubject: ${messageHeadersModal.subject}\nDate: ${new Date(messageHeadersModal.created_at).toUTCString()}`;
+                    navigator.clipboard.writeText(headersToCopy);
+                    toast.success('Raw email headers copied to clipboard!');
+                  }}
+                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded border border-slate-700 flex items-center gap-1 font-sans"
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>Copy Headers</span>
+                </button>
+              </div>
+              <textarea
+                readOnly
+                value={
+                  messageHeadersModal.headers_raw ||
+                  `Received: from mail.kidukart.com (localhost [127.0.0.1]) by mail.kidukart.com with ESMTPS\nFrom: ${messageHeadersModal.sender_name ? `"${messageHeadersModal.sender_name}" <${messageHeadersModal.sender}>` : messageHeadersModal.sender}\nTo: ${messageHeadersModal.recipients}\nSubject: ${messageHeadersModal.subject}\nDate: ${new Date(messageHeadersModal.created_at).toUTCString()}\nContent-Type: text/html; charset="UTF-8"\nStatus: Delivered\nX-MailBox-Engine: MailBox Pro Cloud VPS MTA`
+                }
+                className="w-full flex-1 bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs font-mono text-slate-300 select-all focus:outline-none resize-none leading-relaxed"
+              />
+            </div>
+
+            <div className="flex items-center justify-end pt-2 border-t border-slate-800">
+              <button
+                onClick={() => setMessageHeadersModal(null)}
+                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

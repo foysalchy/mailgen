@@ -167,6 +167,7 @@ async function run() {
       { name: 'scheduled_at', type: 'DATETIME NULL DEFAULT NULL' },
       { name: 'is_scheduled', type: 'BOOLEAN DEFAULT FALSE' },
       { name: 'size_kb', type: 'INT DEFAULT 15' },
+      { name: 'headers_raw', type: 'LONGTEXT NULL' },
     ];
     for (const col of msgColsToAdd) {
       try {
