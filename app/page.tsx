@@ -1879,7 +1879,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
       <div className="min-h-screen w-full bg-slate-950 text-slate-100 flex flex-col font-sans">
         <header className="border-b border-slate-800/80 px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#925ce9] to-indigo-600 flex items-center justify-center shadow-lg shadow-[#925ce9]/20">
               <Mail className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -1914,7 +1914,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   setAuthStep('select_plan');
                   setAuthError('');
                 }}
-                className="text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors shadow-md shadow-blue-600/30"
+                className="text-xs font-semibold bg-[#925ce9] hover:bg-[#7e43e5] text-white px-4 py-2 rounded-lg transition-colors shadow-md shadow-[#925ce9]/30"
               >
                 Get Started (Register)
               </button>
@@ -1974,7 +1974,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 <button
                   type="submit"
                   disabled={authLoading}
-                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-2.5 bg-[#925ce9] hover:bg-[#7e43e5] text-white font-semibold text-xs rounded-xl shadow-lg shadow-[#925ce9]/30 transition-all flex items-center justify-center gap-2"
                 >
                   {authLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Sign In'}
                 </button>
@@ -2164,7 +2164,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   </div>
 
                   <div className="space-y-3 relative">
-                    <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-base shadow-lg shadow-blue-600/40">
+                    <div className="w-10 h-10 rounded-full bg-[#925ce9] text-white flex items-center justify-center font-bold text-base shadow-lg shadow-[#925ce9]/40">
                       2
                     </div>
                     <h3 className="text-base font-bold text-white">Connect Custom Domain</h3>
@@ -2376,7 +2376,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     setAuthMode('login');
                     setAuthError('');
                   }}
-                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-blue-600/30"
+                  className="w-full py-2.5 bg-[#925ce9] hover:bg-[#7e43e5] text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-[#925ce9]/30"
                 >
                   Return to Sign In
                 </button>
@@ -2555,7 +2555,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   <button
                     type="submit"
                     disabled={authLoading}
-                    className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center gap-2"
+                    className="px-6 py-2.5 bg-gradient-to-r from-[#925ce9] to-[#7e43e5] hover:from-[#8247e5] hover:to-[#6d32d5] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#925ce9]/30 transition-all flex items-center gap-2"
                   >
                     {authLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : `Submit Registration & Invoice`}
                   </button>
@@ -2942,7 +2942,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   </button>
                   <button
                     onClick={() => setActiveTab('webmail')}
-                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-600/25 flex items-center gap-2"
+                    className="px-4 py-2 bg-gradient-to-r from-[#925ce9] to-[#7e43e5] hover:from-[#8247e5] hover:to-[#6d32d5] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#925ce9]/25 flex items-center gap-2"
                   >
                     <Mail className="w-4 h-4" /> Open Webmail
                   </button>
@@ -3170,7 +3170,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
                           <button
                             onClick={() => setInvoiceViewModal(inv)}
-                            className="px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                            className="px-3 py-1.5 bg-[#925ce9]/10 hover:bg-[#925ce9]/20 text-[#925ce9] border border-[#925ce9]/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
                           >
                             <Download className="w-3.5 h-3.5" />
                             <span>Download Invoice</span>
@@ -3213,7 +3213,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     }
                     setComposeModal(true);
                   }}
-                  className="w-full mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium py-2.5 px-4 rounded-xl shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 transition-all"
+                  className="w-full mb-4 bg-gradient-to-r from-[#925ce9] to-[#7e43e5] hover:from-[#8247e5] hover:to-[#6d32d5] text-white font-medium py-2.5 px-4 rounded-xl shadow-lg shadow-[#925ce9]/25 flex items-center justify-center gap-2 transition-all"
                 >
                   <Send className="w-4 h-4" />
                   <span>Compose Mail</span>
@@ -3401,7 +3401,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                         setSelectedMessageIds([]);
                       }
                     }}
-                    className="w-3.5 h-3.5 rounded text-blue-600 bg-slate-800 border-slate-700"
+                    className="w-3.5 h-3.5 rounded text-[#925ce9] bg-slate-800 border-slate-700 focus:ring-0"
                     title="Select All"
                   />
                   <span className="text-[11px] text-slate-400">
@@ -3453,7 +3453,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                       key={msg.id}
                       onClick={() => setSelectedMessage(msg)}
                       className={`p-3 cursor-pointer transition-colors ${
-                        selectedMessage?.id === msg.id ? 'bg-blue-600/10 border-l-2 border-blue-500' : 'hover:bg-slate-800/40'
+                        selectedMessage?.id === msg.id ? 'bg-[#925ce9]/10 border-l-2 border-[#925ce9]' : 'hover:bg-slate-800/40'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
@@ -3469,7 +3469,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                                 setSelectedMessageIds((prev) => prev.filter((id) => id !== msg.id));
                               }
                             }}
-                            className="w-3.5 h-3.5 rounded text-blue-600 bg-slate-800 border-slate-700 cursor-pointer"
+                            className="w-3.5 h-3.5 rounded text-[#925ce9] bg-slate-800 border-slate-700 focus:ring-0 cursor-pointer"
                           />
                           {/* Gmail Style Star Toggle Button */}
                           <button
@@ -3789,7 +3789,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     </div>
                     <button
                       type="submit"
-                      className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-blue-600/30"
+                      className="px-5 py-2.5 bg-[#925ce9] hover:bg-[#7e43e5] text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-[#925ce9]/30"
                     >
                       <Plus className="w-4 h-4" />
                       <span>Add Domain</span>
@@ -3840,7 +3840,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                         </button>
                         <button
                           onClick={() => setSelectedDomainDns(dom)}
-                          className="px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-xs font-medium text-blue-400 rounded-lg border border-blue-500/30 transition-colors"
+                          className="px-3 py-1.5 bg-[#925ce9]/10 hover:bg-[#925ce9]/20 text-xs font-medium text-[#925ce9] rounded-lg border border-[#925ce9]/30 transition-colors"
                         >
                           DNS Guide
                         </button>
@@ -4037,7 +4037,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     <button
                       onClick={() => setNewMailboxModal(true)}
                       disabled={domains.length === 0}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-lg shadow-blue-600/25"
+                      className="px-4 py-2 bg-[#925ce9] hover:bg-[#7e43e5] disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-lg shadow-[#925ce9]/25"
                     >
                       <Plus className="w-4 h-4" />
                       <span>Create Mailbox</span>
@@ -4093,7 +4093,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                                 setSelectedMailbox(mb);
                                 setActiveTab('webmail');
                               }}
-                              className="px-3 py-1 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/20 text-xs rounded font-medium transition-colors"
+                              className="px-3 py-1 bg-[#925ce9]/10 hover:bg-[#925ce9]/20 text-[#925ce9] border border-[#925ce9]/20 text-xs rounded font-medium transition-colors"
                             >
                               Open Webmail
                             </button>
@@ -4157,7 +4157,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                           setBulkModal(true);
                         }}
                         disabled={mailboxes.length === 0}
-                        className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-blue-600/25"
+                        className="px-4 py-2 bg-gradient-to-r from-[#925ce9] to-[#7e43e5] hover:from-[#8247e5] hover:to-[#6d32d5] disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-[#925ce9]/25"
                       >
                         <Send className="w-4 h-4" />
                         <span>Compose Bulk Campaign</span>
@@ -4270,7 +4270,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 </div>
                 <button
                   onClick={() => setSubUserModal(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-blue-600/25"
+                  className="px-4 py-2 bg-gradient-to-r from-[#925ce9] to-indigo-600 hover:from-[#8247e5] hover:to-indigo-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-[#925ce9]/25"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Create Sub-User</span>
@@ -4371,7 +4371,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 </div>
                 <button
                   onClick={() => setNewKeyModal(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-600/30 flex items-center gap-2"
+                  className="px-4 py-2 bg-gradient-to-r from-[#925ce9] to-[#7e43e5] hover:from-[#8247e5] hover:to-[#6d32d5] text-white text-sm font-semibold rounded-xl shadow-lg shadow-[#925ce9]/30 flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Generate New API Key</span>
@@ -4634,7 +4634,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                       setTemplateFormData({ id: null, name: '', subject: '', category: 'General', bodyHtml: '' });
                       setTemplateModal(true);
                     }}
-                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-600/30 flex items-center gap-2"
+                    className="px-4 py-2 bg-gradient-to-r from-[#925ce9] to-[#7e43e5] hover:from-[#8247e5] hover:to-[#6d32d5] text-white text-sm font-semibold rounded-xl shadow-lg shadow-[#925ce9]/30 flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Create New Template</span>
@@ -4700,7 +4700,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                           <button
                             onClick={() => handleApplyTemplateToCompose(tpl)}
                             title="Use in Compose Window"
-                            className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg flex items-center gap-1 transition-colors"
+                            className="px-2.5 py-1 bg-[#925ce9] hover:bg-[#7e43e5] text-white text-xs font-semibold rounded-lg flex items-center gap-1 transition-colors"
                           >
                             <Send className="w-3 h-3" />
                             <span>Use</span>
@@ -4907,7 +4907,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                           <td className="p-4 text-right">
                             <button
                               onClick={() => setInvoiceViewModal(inv)}
-                              className="px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-colors"
+                              className="px-3 py-1.5 bg-[#925ce9]/10 hover:bg-[#925ce9]/20 text-[#925ce9] border border-[#925ce9]/30 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-colors"
                             >
                               <Download className="w-3.5 h-3.5" />
                               <span>Download Invoice</span>
@@ -4980,7 +4980,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => setCreateCompanyModal(true)}
-                      className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-600/25 flex items-center gap-1.5 transition-all"
+                      className="px-3.5 py-1.5 bg-gradient-to-r from-[#925ce9] to-[#7e43e5] hover:from-[#8247e5] hover:to-[#6d32d5] text-white font-bold text-xs rounded-xl shadow-md shadow-[#925ce9]/25 flex items-center gap-1.5 transition-all"
                     >
                       <Plus className="w-4 h-4" />
                       <span>Create New Company</span>
@@ -5062,7 +5062,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                               {/* Super Admin Direct Package Upgrade */}
                               <button
                                 onClick={() => setCompanyPlanModal(comp)}
-                                className="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 text-xs font-semibold rounded-lg transition-all"
+                                className="px-2.5 py-1 bg-[#925ce9]/20 hover:bg-[#925ce9]/30 text-[#925ce9] border border-[#925ce9]/30 text-xs font-semibold rounded-lg transition-all"
                               >
                                 Change Package
                               </button>
@@ -5364,7 +5364,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                         <button
                           type="submit"
                           disabled={settingsLoading}
-                          className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center gap-2"
+                          className="px-5 py-2.5 bg-gradient-to-r from-[#925ce9] to-[#7e43e5] hover:from-[#8247e5] hover:to-[#6d32d5] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#925ce9]/30 transition-all flex items-center gap-2"
                         >
                           {settingsLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : 'Save Company Details & Email Footer'}
                         </button>
@@ -5479,7 +5479,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                         <button
                           type="submit"
                           disabled={settingsLoading}
-                          className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center gap-2"
+                          className="px-5 py-2.5 bg-gradient-to-r from-[#925ce9] to-[#7e43e5] hover:from-[#8247e5] hover:to-[#6d32d5] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#925ce9]/30 transition-all flex items-center gap-2"
                         >
                           {settingsLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : 'Save Profile & Password'}
                         </button>
@@ -5848,7 +5848,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                       type="button"
                       onClick={() => setComposeEditorView('editor')}
                       className={`px-2 py-0.5 rounded transition-colors flex items-center gap-1 ${
-                        composeEditorView === 'editor' ? 'bg-blue-600 text-white font-medium shadow' : 'text-slate-400 hover:text-white'
+                        composeEditorView === 'editor' ? 'bg-[#925ce9] text-white font-medium shadow' : 'text-slate-400 hover:text-white'
                       }`}
                     >
                       <FileText className="w-2.5 h-2.5" />
@@ -5858,7 +5858,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                       type="button"
                       onClick={() => setComposeEditorView('preview')}
                       className={`px-2 py-0.5 rounded transition-colors flex items-center gap-1 ${
-                        composeEditorView === 'preview' ? 'bg-blue-600 text-white font-medium shadow' : 'text-slate-400 hover:text-white'
+                        composeEditorView === 'preview' ? 'bg-[#925ce9] text-white font-medium shadow' : 'text-slate-400 hover:text-white'
                       }`}
                     >
                       <Eye className="w-2.5 h-2.5" />
@@ -5868,7 +5868,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                       type="button"
                       onClick={() => setComposeEditorView('code')}
                       className={`px-2 py-0.5 rounded transition-colors flex items-center gap-1 ${
-                        composeEditorView === 'code' ? 'bg-blue-600 text-white font-medium shadow' : 'text-slate-400 hover:text-white'
+                        composeEditorView === 'code' ? 'bg-[#925ce9] text-white font-medium shadow' : 'text-slate-400 hover:text-white'
                       }`}
                     >
                       <Code className="w-2.5 h-2.5" />
@@ -5979,7 +5979,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-1.5 bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white rounded-lg transition-colors flex items-center gap-1.5 shadow-md shadow-blue-600/30"
+                      className="px-5 py-1.5 bg-[#925ce9] hover:bg-[#7e43e5] text-xs font-semibold text-white rounded-lg transition-colors flex items-center gap-1.5 shadow-md shadow-[#925ce9]/30"
                     >
                       <Send className="w-3.5 h-3.5" />
                       <span>{isScheduling ? 'Schedule' : 'Send'}</span>
@@ -7117,7 +7117,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                       window.print();
                     }
                   }}
-                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg shadow flex items-center gap-1.5 transition-all cursor-pointer"
+                  className="px-3.5 py-1.5 bg-[#925ce9] hover:bg-[#7e43e5] text-white text-xs font-bold rounded-lg shadow flex items-center gap-1.5 transition-all cursor-pointer"
                 >
                   <Printer className="w-3.5 h-3.5" />
                   <span>Print / Save as PDF</span>
@@ -7138,7 +7138,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               <div className="flex items-start justify-between border-b border-slate-200 pb-6">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold">
+                    <div className="w-8 h-8 rounded-lg bg-[#925ce9] text-white flex items-center justify-center font-bold">
                       <Mail className="w-4 h-4" />
                     </div>
                     <span className="text-xl font-black text-slate-900">MailBox Pro</span>
@@ -7148,7 +7148,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 </div>
 
                 <div className="text-right">
-                  <span className="text-xs font-bold uppercase tracking-widest text-blue-600 block mb-1">
+                  <span className="text-xs font-bold uppercase tracking-widest text-[#925ce9] block mb-1">
                     INVOICE RECEIPT
                   </span>
                   <p className="font-mono font-black text-base text-slate-900">{invoiceViewModal.invoice_number}</p>
@@ -7253,7 +7253,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   </div>
                   <div className="flex justify-between pt-2 border-t-2 border-slate-900 text-slate-900 font-bold text-sm">
                     <span>Total Amount:</span>
-                    <span className="font-mono text-base font-black text-blue-600">${Number(invoiceViewModal.amount).toFixed(2)}</span>
+                    <span className="font-mono text-base font-black text-[#925ce9]">${Number(invoiceViewModal.amount).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -7405,7 +7405,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 <button
                   type="submit"
                   disabled={createCompanyLoading}
-                  className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-600/30 flex items-center gap-1.5 transition-all"
+                  className="px-5 py-2.5 bg-gradient-to-r from-[#925ce9] to-[#7e43e5] hover:from-[#8247e5] hover:to-[#6d32d5] text-white font-bold text-xs rounded-xl shadow-lg shadow-[#925ce9]/30 flex items-center gap-1.5 transition-all"
                 >
                   {createCompanyLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : 'Create & Activate Company'}
                 </button>
