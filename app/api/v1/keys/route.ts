@@ -38,8 +38,12 @@ export async function GET(request: Request) {
     const userId = searchParams.get('userId');
     const companyId = searchParams.get('companyId');
 
-    if (!userId && !companyId) {
-      return NextResponse.json({ success: false, message: 'userId or companyId is required' }, { status: 400 });
+    let resolvedCompanyId = companyId;
+    if (!resolvedCompanyId && userId) {
+      const [uRows]: any = await pool.query('SELECT company_id FROM users WHERE id = ?', [userId]);
+      if (uRows.length > 0 && uRows[0].company_id) {
+        resolvedCompanyId = uRows[0].company_id;
+      }
     }
 
     let query = `
@@ -49,13 +53,13 @@ export async function GET(request: Request) {
     `;
     const params: any[] = [];
 
-    if (companyId && userId) {
-      query += ` AND (k.company_id = ? OR k.user_id = ?)`;
-      params.push(companyId, userId);
-    } else if (companyId) {
-      query += ` AND k.company_id = ?`;
-      params.push(companyId);
-    } else {
+    if (resolvedCompanyId && userId) {
+      query += ` AND (k.company_id = ? OR k.user_id = ? OR k.company_id IS NULL)`;
+      params.push(resolvedCompanyId, userId);
+    } else if (resolvedCompanyId) {
+      query += ` AND (k.company_id = ? OR k.company_id IS NULL)`;
+      params.push(resolvedCompanyId);
+    } else if (userId) {
       query += ` AND k.user_id = ?`;
       params.push(userId);
     }
@@ -78,8 +82,16 @@ export async function POST(request: Request) {
     const { action = 'create', userId, companyId, name, senderEmail, keyId } = body;
 
     if (action === 'create') {
-      if ((!userId && !companyId) || !name) {
-        return NextResponse.json({ success: false, message: 'User ID or Company ID and Key Name are required' }, { status: 400 });
+      if (!name) {
+        return NextResponse.json({ success: false, message: 'Key Name is required' }, { status: 400 });
+      }
+
+      let resolvedCompanyId = companyId;
+      if (!resolvedCompanyId && userId) {
+        const [uRows]: any = await pool.query('SELECT company_id FROM users WHERE id = ?', [userId]);
+        if (uRows.length > 0 && uRows[0].company_id) {
+          resolvedCompanyId = uRows[0].company_id;
+        }
       }
 
       // Generate a secure, production-grade API key: mbx_live_<32 hex>
@@ -88,7 +100,7 @@ export async function POST(request: Request) {
 
       const [res]: any = await pool.query(
         `INSERT INTO api_keys (user_id, company_id, name, api_key, sender_email) VALUES (?, ?, ?, ?, ?)`,
-        [userId || 1, companyId || null, name.trim(), apiKey, senderEmail ? senderEmail.trim() : null]
+        [userId || 1, resolvedCompanyId || 1, name.trim(), apiKey, senderEmail ? senderEmail.trim() : null]
       );
 
       return NextResponse.json({
