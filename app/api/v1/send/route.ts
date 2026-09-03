@@ -14,6 +14,48 @@ export async function OPTIONS() {
   });
 }
 
+// Ensure table exists helper
+async function ensureApiKeysTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS api_keys (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      company_id INT NULL,
+      name VARCHAR(150) NOT NULL,
+      api_key VARCHAR(255) NOT NULL UNIQUE,
+      sender_email VARCHAR(255) NULL,
+      allowed_origins TEXT NULL,
+      status ENUM('active', 'revoked') DEFAULT 'active',
+      total_requests INT DEFAULT 0,
+      last_used_at TIMESTAMP NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX (user_id),
+      INDEX (company_id),
+      INDEX (api_key)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `);
+
+  try {
+    await pool.query('ALTER TABLE api_keys ADD COLUMN company_id INT NULL AFTER user_id');
+  } catch (e) {}
+
+  try {
+    await pool.query('ALTER TABLE api_keys ADD COLUMN sender_email VARCHAR(255) NULL AFTER api_key');
+  } catch (e) {}
+
+  try {
+    await pool.query('ALTER TABLE api_keys ADD COLUMN allowed_origins TEXT NULL AFTER sender_email');
+  } catch (e) {}
+
+  try {
+    await pool.query('ALTER TABLE api_keys ADD COLUMN total_requests INT DEFAULT 0 AFTER status');
+  } catch (e) {}
+
+  try {
+    await pool.query('ALTER TABLE api_keys ADD COLUMN last_used_at TIMESTAMP NULL AFTER total_requests');
+  } catch (e) {}
+}
+
 // POST: Public REST endpoint for external websites to send emails without SMTP
 export async function POST(request: Request) {
   const corsHeaders = {
@@ -23,6 +65,7 @@ export async function POST(request: Request) {
   };
 
   try {
+    await ensureApiKeysTable();
     // 1. Authenticate API Key from headers or body
     const authHeader = request.headers.get('authorization') || '';
     const customHeader = request.headers.get('x-api-key') || '';
