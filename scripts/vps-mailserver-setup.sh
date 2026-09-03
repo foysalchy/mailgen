@@ -9,8 +9,8 @@ set -e
 
 # Configuration Variables - Tailored for kidukart.com
 DB_NAME="mailserver"
-DB_USER="mailuser"
-DB_PASS="KiduKartPass_2026!"
+DB_USER="root"
+DB_PASS="Root@2025"
 MAIN_DOMAIN="kidukart.com"
 MAIL_HOSTNAME="mail.kidukart.com"
 
