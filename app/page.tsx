@@ -2205,7 +2205,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
     return (
       <div className="min-h-screen w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors">
         {/* Sticky Premium Navigation Header */}
-        <header className="sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800/80 px-6 sm:px-10 py-3.5 flex items-center justify-between transition-colors shadow-sm">
+        <header className="sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800/80 px-4 sm:px-10 py-3.5 flex items-center justify-between transition-colors shadow-sm">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setAuthMode('register'); setAuthStep('select_plan'); }}>
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#925ce9] to-indigo-600 flex items-center justify-center shadow-lg shadow-[#925ce9]/25 text-white">
               <Mail className="w-5 h-5 text-white" />
@@ -2216,7 +2216,15 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
             </div>
           </div>
 
-          <div className="flex items-center gap-3 sm:gap-4">
+          {/* Desktop Links */}
+          <div className="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-600 dark:text-slate-300">
+            <a href="#features" className="hover:text-[#925ce9] transition-colors">Features</a>
+            <a href="#how-it-works" className="hover:text-[#925ce9] transition-colors">How It Works</a>
+            <a href="#pricing" className="hover:text-[#925ce9] transition-colors">Pricing Plans</a>
+            <a href="#faq" className="hover:text-[#925ce9] transition-colors">FAQ</a>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={toggleTheme}
               title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
@@ -2231,7 +2239,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   setAuthMode('login');
                   setAuthError('');
                 }}
-                className="text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
+                className="text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white px-3 sm:px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
               >
                 Sign In
               </button>
@@ -2242,13 +2250,111 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   setAuthStep('select_plan');
                   setAuthError('');
                 }}
-                className="text-xs font-bold bg-[#925ce9] hover:bg-[#7e43e5] text-white px-4 py-2 rounded-xl transition-colors shadow-md shadow-[#925ce9]/30"
+                className="text-xs font-bold bg-[#925ce9] hover:bg-[#7e43e5] text-white px-3 sm:px-4 py-2 rounded-xl transition-colors shadow-md shadow-[#925ce9]/30"
               >
                 Get Started
               </button>
             )}
+
+            {/* Mobile Hamburger Menu button for Landing Page */}
+            <button
+              onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+              className="md:hidden p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800"
+              title="Menu"
+            >
+              <Menu className="w-5 h-5 text-[#925ce9]" />
+            </button>
           </div>
         </header>
+
+        {/* Mobile Slide-over Drawer for Landing Page */}
+        {mobileSidebarOpen && (
+          <div className="md:hidden fixed inset-0 z-50 flex">
+            {/* Backdrop */}
+            <div
+              onClick={() => setMobileSidebarOpen(false)}
+              className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm"
+            />
+            {/* Drawer Content */}
+            <div className="relative w-4/5 max-w-xs bg-white dark:bg-slate-900 h-full p-6 flex flex-col justify-between shadow-2xl border-r border-slate-200 dark:border-slate-800 z-10 animate-slide-in">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-[#925ce9] flex items-center justify-center text-white font-bold">
+                      <Mail className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="font-bold text-sm text-slate-900 dark:text-white">MailBox Pro</span>
+                  </div>
+                  <button
+                    onClick={() => setMobileSidebarOpen(false)}
+                    className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-lg"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <nav className="flex flex-col space-y-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  <a
+                    href="#features"
+                    onClick={() => setMobileSidebarOpen(false)}
+                    className="px-3 py-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
+                  >
+                    <span>Capabilities & Features</span>
+                    <ChevronRight className="w-4 h-4 text-[#925ce9]" />
+                  </a>
+                  <a
+                    href="#how-it-works"
+                    onClick={() => setMobileSidebarOpen(false)}
+                    className="px-3 py-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
+                  >
+                    <span>Quick 3-Min Setup</span>
+                    <ChevronRight className="w-4 h-4 text-[#925ce9]" />
+                  </a>
+                  <a
+                    href="#pricing"
+                    onClick={() => setMobileSidebarOpen(false)}
+                    className="px-3 py-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between text-[#925ce9]"
+                  >
+                    <span>Pricing Plans</span>
+                    <ChevronRight className="w-4 h-4 text-[#925ce9]" />
+                  </a>
+                  <a
+                    href="#faq"
+                    onClick={() => setMobileSidebarOpen(false)}
+                    className="px-3 py-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
+                  >
+                    <span>FAQ</span>
+                    <ChevronRight className="w-4 h-4 text-[#925ce9]" />
+                  </a>
+                </nav>
+              </div>
+
+              <div className="space-y-3 pt-6 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  onClick={() => {
+                    setAuthMode('login');
+                    setAuthError('');
+                    setMobileSidebarOpen(false);
+                  }}
+                  className="w-full py-2.5 text-xs font-semibold text-slate-800 dark:text-white border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 rounded-xl"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => {
+                    setAuthMode('register');
+                    setAuthStep('select_plan');
+                    setAuthError('');
+                    setMobileSidebarOpen(false);
+                  }}
+                  className="w-full py-2.5 text-xs font-bold text-white bg-[#925ce9] hover:bg-[#7e43e5] rounded-xl shadow-md shadow-[#925ce9]/30"
+                >
+                  Get Started (Register)
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="flex-1 flex items-center justify-center p-6">
           {authMode === 'login' ? (
@@ -2449,7 +2555,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </div>
 
               {/* 3. SIX CORE FEATURE MODULES (EXPANDED GRID) */}
-              <div className="space-y-8">
+              <div id="features" className="space-y-8 pt-4">
                 <div className="text-center space-y-2 max-w-2xl mx-auto">
                   <span className="text-xs font-bold uppercase tracking-widest text-[#925ce9] bg-[#925ce9]/10 px-3 py-1 rounded-full border border-[#925ce9]/20">
                     Enterprise Capabilities
@@ -2528,7 +2634,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </div>
 
               {/* 4. HOW IT WORKS (3-STEP ONBOARDING WALKTHROUGH) */}
-              <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-3xl p-8 sm:p-12 space-y-8 shadow-sm">
+              <div id="how-it-works" className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-3xl p-8 sm:p-12 space-y-8 shadow-sm">
                 <div className="text-center space-y-2">
                   <span className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
                     Quick Setup Guide
@@ -2654,7 +2760,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </div>
 
               {/* 6. FREQUENTLY ASKED QUESTIONS (FAQ) */}
-              <div className="max-w-4xl mx-auto space-y-6">
+              <div id="faq" className="max-w-4xl mx-auto space-y-6 pt-4">
                 <div className="text-center space-y-2">
                   <span className="text-xs font-bold uppercase tracking-widest text-[#925ce9] bg-[#925ce9]/10 px-3 py-1 rounded-full border border-[#925ce9]/20">
                     Got Questions?
