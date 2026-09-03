@@ -180,6 +180,66 @@ async function run() {
       ) ENGINE=InnoDB;
     `);
 
+    // 8. Invoices Table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS invoices (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        company_id INT NULL,
+        user_id INT NULL,
+        invoice_number VARCHAR(60) NOT NULL UNIQUE,
+        plan_id INT NOT NULL,
+        plan_name VARCHAR(100) NOT NULL,
+        amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+        base_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+        overage_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+        extra_sent_count INT NOT NULL DEFAULT 0,
+        extra_received_count INT NOT NULL DEFAULT 0,
+        billing_cycle VARCHAR(30) DEFAULT 'monthly',
+        status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+        payment_method VARCHAR(50) DEFAULT 'card',
+        transaction_id VARCHAR(100) NULL,
+        notes TEXT NULL,
+        due_date DATE NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        approved_at TIMESTAMP NULL,
+        INDEX idx_inv_company (company_id),
+        INDEX idx_inv_user (user_id),
+        INDEX idx_inv_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // 9. Email Templates Table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS email_templates (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        company_id INT NULL,
+        user_id INT NULL,
+        name VARCHAR(150) NOT NULL,
+        subject VARCHAR(500) NOT NULL,
+        body_html LONGTEXT NOT NULL,
+        body_text LONGTEXT NULL,
+        category VARCHAR(50) DEFAULT 'General',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_tpl_company (company_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // 10. API Keys Table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS api_keys (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        company_id INT NULL,
+        user_id INT NULL,
+        name VARCHAR(100) NOT NULL,
+        api_key VARCHAR(100) NOT NULL UNIQUE,
+        sender_email VARCHAR(191) NULL,
+        status ENUM('active', 'revoked') DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_used_at TIMESTAMP NULL,
+        INDEX idx_key_company (company_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
     // Seed default plans if not exists
     const [plans] = await connection.query('SELECT COUNT(*) as cnt FROM plans');
     if (plans[0].cnt === 0) {
