@@ -105,28 +105,34 @@ export async function POST(request: Request) {
       senderEmail = from.includes('<') ? from.match(/<([^>]+)>/)?.[1] : from;
     }
 
+    // Lookup user's company_id
+    const [uRows]: any = await pool.query('SELECT id, company_id FROM users WHERE id = ?', [keyRecord.user_id]);
+    const companyId = uRows[0]?.company_id || null;
+
     if (!senderEmail) {
-      // Find the first available mailbox for this user
+      // Find the first available mailbox for this user or their company
       const [userBoxes]: any = await pool.query(
-        `SELECT email, id FROM virtual_users WHERE user_id = ? LIMIT 1`,
-        [keyRecord.user_id]
+        `SELECT u.email, u.id FROM virtual_users u 
+         WHERE u.user_id = ? OR (u.company_id = ? AND u.company_id IS NOT NULL) 
+         LIMIT 1`,
+        [keyRecord.user_id, companyId]
       );
       if (userBoxes.length === 0) {
         return NextResponse.json(
-          { success: false, error: 'No verified sender mailbox found in your MailBox Pro account.' },
+          { success: false, error: 'No verified sender mailbox found in your MailBox Pro account. Please create a mailbox first.' },
           { status: 400, headers: corsHeaders }
         );
       }
       senderEmail = userBoxes[0].email;
     }
 
-    // 5. Verify sender email belongs to user
+    // 5. Verify sender email belongs to user or company
     const [senderBox]: any = await pool.query(
-      `SELECT u.id, u.email, u.full_name, d.name as domain_name
+      `SELECT u.id, u.email, u.full_name, u.company_id, d.name as domain_name
        FROM virtual_users u
        JOIN virtual_domains d ON u.domain_id = d.id
-       WHERE u.email = ? AND u.user_id = ?`,
-      [senderEmail, keyRecord.user_id]
+       WHERE u.email = ? AND (u.user_id = ? OR (u.company_id = ? AND u.company_id IS NOT NULL))`,
+      [senderEmail, keyRecord.user_id, companyId]
     );
 
     if (senderBox.length === 0) {
@@ -164,7 +170,32 @@ export async function POST(request: Request) {
       await pool.query('UPDATE companies SET month_sent_count = month_sent_count + 1 WHERE id = ?', [mailbox.company_id]);
     }
 
-    // 8. Deliver locally if recipient exists in virtual_users
+    // 8. Deliver via local Postfix SMTP to external destinations (Gmail, Yahoo, Outlook, etc.)
+    try {
+      const transporter = nodemailer.createTransport({
+        host: '127.0.0.1',
+        port: 25,
+        secure: false,
+        tls: {
+          rejectUnauthorized: false,
+        },
+      });
+
+      await transporter.sendMail({
+        from: `"${from && from.includes('<') ? from.split('<')[0].trim() : mailbox.full_name || mailbox.email}" <${mailbox.email}>`,
+        to: Array.isArray(to) ? to.join(', ') : to,
+        cc: cc || undefined,
+        bcc: bcc || undefined,
+        replyTo: replyTo || mailbox.email,
+        subject,
+        text: text || '',
+        html: html || `<p>${text}</p>`,
+      });
+    } catch (smtpErr: any) {
+      console.error('REST API Postfix SMTP relay log:', smtpErr.message);
+    }
+
+    // 9. Deliver locally if recipient exists in virtual_users
     const recipientList = (Array.isArray(to) ? to : to.split(',')).map((e: string) => e.trim().toLowerCase());
     for (const rec of recipientList) {
       const cleanRec = rec.includes('<') ? rec.match(/<([^>]+)>/)?.[1] || rec : rec;
@@ -192,7 +223,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // 8. Update API key usage statistics
+    // 10. Update API key usage statistics
     await pool.query(
       `UPDATE api_keys 
        SET total_requests = total_requests + 1, last_used_at = CURRENT_TIMESTAMP 
@@ -207,7 +238,7 @@ export async function POST(request: Request) {
         from: mailbox.email,
         to,
         subject,
-        status: 'queued_and_delivered',
+        status: 'delivered',
         timestamp: new Date().toISOString(),
       },
       { status: 200, headers: corsHeaders }
