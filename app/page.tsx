@@ -34,6 +34,7 @@ import {
   HardDrive,
   Settings2,
   ChevronRight,
+  ArrowRight,
   Sun,
   Moon,
   Code2,
