@@ -190,13 +190,38 @@ export async function POST(request: Request) {
         ]
       );
 
-      // If not scheduled, deliver immediately to local recipient
+      // If not scheduled, deliver immediately via local Postfix SMTP and local inbox routing
       if (!isScheduled) {
         // Increment company sent count
         if (senderMailbox.company_id) {
           await pool.query('UPDATE companies SET month_sent_count = month_sent_count + 1 WHERE id = ?', [senderMailbox.company_id]);
         }
 
+        // 1. Dispatch real email to external world (Gmail, Yahoo, Outlook, etc.) via local Postfix
+        try {
+          const transporter = nodemailer.createTransport({
+            host: '127.0.0.1',
+            port: 25,
+            secure: false,
+            tls: {
+              rejectUnauthorized: false,
+            },
+          });
+
+          await transporter.sendMail({
+            from: `"${senderMailbox.full_name || senderMailbox.email}" <${senderMailbox.email}>`,
+            to,
+            cc: cc || undefined,
+            bcc: bcc || undefined,
+            subject,
+            text: bodyText || '',
+            html: bodyHtml || `<p>${bodyText}</p>`,
+          });
+        } catch (smtpErr: any) {
+          console.error('Local Postfix SMTP relay notice:', smtpErr.message);
+        }
+
+        // 2. Deliver copy to internal inbox if recipient belongs to MailBox Pro
         const recipientEmails = to.split(',').map((e: string) => e.trim().toLowerCase());
         for (const recEmail of recipientEmails) {
           const [localRec]: any = await pool.query('SELECT id, company_id FROM virtual_users WHERE email = ?', [recEmail]);
