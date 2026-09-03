@@ -82,3 +82,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
+
+// DELETE: Delete a custom domain
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const domainId = searchParams.get('domainId');
+
+    if (!domainId) {
+      return NextResponse.json({ success: false, message: 'domainId is required' }, { status: 400 });
+    }
+
+    await pool.query('DELETE FROM virtual_domains WHERE id = ?', [domainId]);
+
+    return NextResponse.json({ success: true, message: 'Domain deleted successfully' });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  }
+}

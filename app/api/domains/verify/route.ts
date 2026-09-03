@@ -14,20 +14,20 @@ export async function POST(request: Request) {
     const domain = rows[0];
     const mailHost = process.env.MAIL_SERVER_HOST || 'mail.yourdomain.com';
 
-    // Verify DNS
+    // Verify DNS with real-time lookup
     const checkResult = await verifyDomainDns(domain.name, mailHost, domain.dkim_selector || 'mail');
 
-    // If MX and SPF are valid, we can mark as verified
-    const isVerified = checkResult.mxMatched || checkResult.spfMatched;
+    // Both MX and SPF must actually exist on Cloudflare to be verified
+    const isVerified = Boolean(checkResult.mxMatched && checkResult.spfMatched);
 
-    if (isVerified && !domain.is_verified) {
-      await pool.query('UPDATE virtual_domains SET is_verified = 1 WHERE id = ?', [domainId]);
-    }
+    // Sync database with current real-world DNS status
+    await pool.query('UPDATE virtual_domains SET is_verified = ? WHERE id = ?', [isVerified ? 1 : 0, domainId]);
 
     return NextResponse.json({
       success: true,
       isVerified,
       checkResult,
+      message: isVerified ? 'Domain verified successfully!' : 'DNS records not detected yet on Cloudflare or missing.',
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });

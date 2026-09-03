@@ -1480,6 +1480,49 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
     }
   };
 
+  const handleDeleteDomain = async (domainId: number, domainName: string) => {
+    if (!confirm(`Are you sure you want to delete domain "${domainName}"? All associated mailboxes and aliases under this domain will also be deleted.`)) return;
+    try {
+      const res = await fetch(`/api/domains?domainId=${domainId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        if (currentUser?.id) fetchDomains(currentUser.id, currentUser.company_id);
+        if (selectedDomainDns?.id === domainId) setSelectedDomainDns(null);
+        toast.success(`Domain ${domainName} deleted successfully`);
+      } else {
+        toast.error(data.message || 'Failed to delete domain');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error deleting domain');
+    }
+  };
+
+  const handleVerifyDns = async (domainId: number) => {
+    setVerifyingDns(true);
+    try {
+      const res = await fetch('/api/domains/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domainId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (currentUser?.id) fetchDomains(currentUser.id, currentUser.company_id);
+        if (data.isVerified) {
+          toast.success(data.message || 'Domain verified! MX and SPF are properly configured on Cloudflare.');
+        } else {
+          toast.warning(data.message || 'DNS records not detected yet on Cloudflare or missing.');
+        }
+      } else {
+        toast.error(data.message || 'Error checking DNS');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error connecting to DNS verifier');
+    } finally {
+      setVerifyingDns(false);
+    }
+  };
+
   const handleCreateMailbox = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser?.id) return;
@@ -3065,6 +3108,13 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                           className="px-3.5 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-xs font-medium text-blue-400 rounded-lg border border-blue-500/30 transition-colors"
                         >
                           View DNS Guide
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDomain(dom.id, dom.name)}
+                          title={`Delete domain ${dom.name}`}
+                          className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg border border-rose-500/30 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
