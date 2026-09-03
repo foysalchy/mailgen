@@ -199,8 +199,14 @@ export default function MailboxApp() {
   const [collapsedThreadIds, setCollapsedThreadIds] = useState<number[]>([]);
   const [inlineReplyOpen, setInlineReplyOpen] = useState(false);
   const [inlineReplyMode, setInlineReplyMode] = useState<'reply' | 'replyAll' | 'forward'>('reply');
-  const [inlineReplyBody, setInlineReplyBody] = useState('');
+  const [inlineReplyBodyHtml, setInlineReplyBodyHtml] = useState('');
+  const [inlineReplyBodyText, setInlineReplyBodyText] = useState('');
   const [inlineReplyTo, setInlineReplyTo] = useState('');
+  const [inlineReplyCc, setInlineReplyCc] = useState('');
+  const [inlineReplyBcc, setInlineReplyBcc] = useState('');
+  const [inlineReplyShowCc, setInlineReplyShowCc] = useState(false);
+  const [inlineReplyShowBcc, setInlineReplyShowBcc] = useState(false);
+  const [inlineReplyView, setInlineReplyView] = useState<'visual' | 'html' | 'preview'>('visual');
   const [inlineReplySending, setInlineReplySending] = useState(false);
   const [starredTotal, setStarredTotal] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -952,7 +958,8 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
     if (selectedMessage && selectedMailbox?.id) {
       fetchThreadMessages(selectedMailbox.id, selectedMessage.subject, selectedMessage);
       setInlineReplyOpen(false);
-      setInlineReplyBody('');
+      setInlineReplyBodyHtml('');
+      setInlineReplyBodyText('');
     } else {
       setThreadMessages([]);
     }
@@ -1576,11 +1583,15 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
     toast.info('Forwarding message - enter recipient email');
   };
 
-  // Inline Fast Reply (Gmail Style inline box at bottom of conversation)
-  const handleSendInlineReply = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Inline Fast Reply (Gmail Style inline rich compose at bottom of conversation)
+  const handleSendInlineReply = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!selectedMailbox?.id || !selectedMessage) return;
-    if (!inlineReplyBody.trim()) {
+    
+    const contentHtml = inlineReplyBodyHtml || `<p>${inlineReplyBodyText}</p>`;
+    const contentText = inlineReplyBodyText || inlineReplyBodyHtml.replace(/<[^>]+>/g, '');
+
+    if (!contentText.trim() && !contentHtml.trim()) {
       toast.warning('Please enter a reply message.');
       return;
     }
@@ -1608,19 +1619,20 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
           action: 'send',
           mailboxId: selectedMailbox.id,
           to: recipient,
+          cc: inlineReplyCc.trim() || undefined,
+          bcc: inlineReplyBcc.trim() || undefined,
           subject,
-          bodyText: inlineReplyBody,
-          bodyHtml: `<div style="font-family: sans-serif; font-size: 14px; line-height: 1.6; color: #1e293b;">
-            <p>${inlineReplyBody.replace(/\n/g, '<br/>')}</p>
-          </div>`,
+          bodyText: contentText,
+          bodyHtml: contentHtml,
         }),
       });
 
       const data = await res.json();
       if (data.success) {
-        setInlineReplyBody('');
+        setInlineReplyBodyHtml('');
+        setInlineReplyBodyText('');
         setInlineReplyOpen(false);
-        toast.success('Reply sent successfully!');
+        toast.success(inlineReplyMode === 'forward' ? 'Forwarded successfully!' : 'Reply sent successfully!');
         // Refresh thread & messages
         fetchThreadMessages(selectedMailbox.id, selectedMessage.subject, selectedMessage);
         fetchMessages(selectedMailbox.id);
@@ -3902,9 +3914,13 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                           const lastMsg = threadMessages.length > 0 ? threadMessages[threadMessages.length - 1] : selectedMessage;
                           const senderEmail = lastMsg.sender?.includes('<') ? lastMsg.sender.match(/<([^>]+)>/)?.[1] : lastMsg.sender;
                           setInlineReplyTo(senderEmail || '');
+                          setInlineReplyCc('');
+                          setInlineReplyBcc('');
+                          setInlineReplyBodyHtml('');
+                          setInlineReplyBodyText('');
                           setInlineReplyOpen(true);
                         }}
-                        className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700/80 hover:border-[#925ce9]/60 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
+                        className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700/80 hover:border-[#925ce9]/60 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
                       >
                         <Reply className="w-4 h-4 text-[#925ce9]" />
                         <span>Reply</span>
@@ -3912,11 +3928,49 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
                       <button
                         onClick={() => {
-                          setInlineReplyMode('forward');
-                          setInlineReplyTo('');
+                          setInlineReplyMode('replyAll');
+                          const lastMsg = threadMessages.length > 0 ? threadMessages[threadMessages.length - 1] : selectedMessage;
+                          const senderEmail = lastMsg.sender?.includes('<') ? lastMsg.sender.match(/<([^>]+)>/)?.[1] : lastMsg.sender;
+                          setInlineReplyTo(senderEmail || '');
+                          let ccRecs = '';
+                          if (lastMsg.recipients) {
+                            ccRecs = lastMsg.recipients.split(/[,;]/).map((r: string) => r.trim()).filter((r: string) => r && !r.includes(selectedMailbox?.email)).join(', ');
+                          }
+                          setInlineReplyCc(ccRecs);
+                          setInlineReplyShowCc(Boolean(ccRecs));
+                          setInlineReplyBcc('');
+                          setInlineReplyBodyHtml('');
+                          setInlineReplyBodyText('');
                           setInlineReplyOpen(true);
                         }}
-                        className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700/80 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
+                        className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700/80 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
+                      >
+                        <ReplyAll className="w-4 h-4 text-slate-400" />
+                        <span>Reply All</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setInlineReplyMode('forward');
+                          setInlineReplyTo('');
+                          setInlineReplyCc('');
+                          setInlineReplyBcc('');
+                          // Pre-fill forwarded quote
+                          const lastMsg = threadMessages.length > 0 ? threadMessages[threadMessages.length - 1] : selectedMessage;
+                          const fwdHeader = `<br/><br/><div style="border-left: 2px solid #3b82f6; padding-left: 12px; margin-top: 16px; font-size: 13px; color: #64748b;">
+                            <p style="margin: 0 0 4px 0; font-weight: 600; color: #3b82f6;">---------- Forwarded message ---------</p>
+                            <p style="margin: 2px 0;"><strong>From:</strong> ${lastMsg.sender_name || lastMsg.sender} &lt;${lastMsg.sender}&gt;</p>
+                            <p style="margin: 2px 0;"><strong>Date:</strong> ${new Date(lastMsg.created_at).toLocaleString()}</p>
+                            <p style="margin: 2px 0;"><strong>Subject:</strong> ${lastMsg.subject || '(No Subject)'}</p>
+                            <p style="margin: 2px 0 10px 0;"><strong>To:</strong> ${lastMsg.recipients || ''}</p>
+                            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 8px 0;"/>
+                            <div>${lastMsg.body_html || `<p>${lastMsg.body_text || ''}</p>`}</div>
+                          </div>`;
+                          setInlineReplyBodyHtml(`<p></p>${fwdHeader}`);
+                          setInlineReplyBodyText('');
+                          setInlineReplyOpen(true);
+                        }}
+                        className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700/80 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
                       >
                         <Forward className="w-4 h-4 text-slate-400" />
                         <span>Forward</span>
@@ -3924,68 +3978,238 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
                       <button
                         onClick={() => handleReplyMessage(selectedMessage, false)}
-                        className="text-xs text-slate-400 hover:text-slate-200 ml-auto flex items-center gap-1 underline"
+                        className="text-xs text-slate-400 hover:text-white ml-auto flex items-center gap-1 hover:underline"
                       >
-                        <span>Open in full compose window</span>
+                        <span>Open in modal window</span>
                       </button>
                     </div>
                   ) : (
-                    /* Gmail Style Inline Reply Box inside the Thread */
-                    <div className="bg-slate-900 border border-[#925ce9]/50 rounded-xl p-4 shadow-xl shadow-[#925ce9]/10 animate-fadeIn space-y-3">
-                      <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                    /* Gmail Style Full Rich Compose Box inside Conversation Thread */
+                    <div className="bg-slate-900 border border-slate-700/90 rounded-2xl p-5 shadow-2xl shadow-black/40 animate-fadeIn space-y-4">
+                      {/* Top Header of inline composer */}
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                            {inlineReplyMode === 'forward' ? <Forward className="w-3.5 h-3.5 text-blue-400" /> : <Reply className="w-3.5 h-3.5 text-[#925ce9]" />}
-                            {inlineReplyMode === 'forward' ? 'Forward' : 'Reply'} to:
+                          <span className="px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 bg-[#925ce9]/15 text-[#925ce9] border border-[#925ce9]/30">
+                            {inlineReplyMode === 'forward' ? <Forward className="w-3.5 h-3.5" /> : inlineReplyMode === 'replyAll' ? <ReplyAll className="w-3.5 h-3.5" /> : <Reply className="w-3.5 h-3.5" />}
+                            <span className="capitalize">{inlineReplyMode === 'replyAll' ? 'Reply All' : inlineReplyMode}</span>
                           </span>
+                          <span className="text-xs text-slate-400">
+                            From: <strong className="text-slate-200">{selectedMailbox?.email}</strong>
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {/* Visual / HTML / Preview Tabs */}
+                          <div className="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800 text-[11px]">
+                            <button
+                              type="button"
+                              onClick={() => setInlineReplyView('visual')}
+                              className={`px-2.5 py-0.5 rounded font-medium transition-colors ${
+                                inlineReplyView === 'visual' ? 'bg-[#925ce9] text-white shadow' : 'text-slate-400 hover:text-white'
+                              }`}
+                            >
+                              Visual
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setInlineReplyView('preview')}
+                              className={`px-2.5 py-0.5 rounded font-medium transition-colors ${
+                                inlineReplyView === 'preview' ? 'bg-[#925ce9] text-white shadow' : 'text-slate-400 hover:text-white'
+                              }`}
+                            >
+                              Preview
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setInlineReplyView('html')}
+                              className={`px-2.5 py-0.5 rounded font-medium transition-colors ${
+                                inlineReplyView === 'html' ? 'bg-[#925ce9] text-white shadow' : 'text-slate-400 hover:text-white'
+                              }`}
+                            >
+                              HTML
+                            </button>
+                          </div>
+
+                          <button
+                            onClick={() => setInlineReplyOpen(false)}
+                            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                            title="Discard draft"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Recipient Fields (To, CC, BCC) */}
+                      <div className="space-y-2 text-xs">
+                        <div className="flex items-center gap-2 bg-slate-950/70 px-3 py-1.5 rounded-xl border border-slate-800">
+                          <span className="text-slate-400 font-semibold w-10 shrink-0">To:</span>
                           <input
                             type="text"
                             value={inlineReplyTo}
                             onChange={(e) => setInlineReplyTo(e.target.value)}
-                            placeholder="Recipient email address..."
-                            className="bg-slate-800 border border-slate-700 px-2.5 py-1 text-xs text-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#925ce9] min-w-[220px]"
+                            placeholder="Recipient email addresses..."
+                            className="flex-1 bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none"
                           />
+                          <div className="flex items-center gap-2 shrink-0">
+                            {!inlineReplyShowCc && (
+                              <button
+                                type="button"
+                                onClick={() => setInlineReplyShowCc(true)}
+                                className="text-[11px] text-slate-400 hover:text-white hover:underline"
+                              >
+                                Cc
+                              </button>
+                            )}
+                            {!inlineReplyShowBcc && (
+                              <button
+                                type="button"
+                                onClick={() => setInlineReplyShowBcc(true)}
+                                className="text-[11px] text-slate-400 hover:text-white hover:underline"
+                              >
+                                Bcc
+                              </button>
+                            )}
+                          </div>
                         </div>
 
-                        <button
-                          onClick={() => setInlineReplyOpen(false)}
-                          className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800"
-                          title="Discard inline reply"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                        {inlineReplyShowCc && (
+                          <div className="flex items-center gap-2 bg-slate-950/70 px-3 py-1.5 rounded-xl border border-slate-800 animate-fadeIn">
+                            <span className="text-slate-400 font-semibold w-10 shrink-0">Cc:</span>
+                            <input
+                              type="text"
+                              value={inlineReplyCc}
+                              onChange={(e) => setInlineReplyCc(e.target.value)}
+                              placeholder="Carbon copy recipients..."
+                              className="flex-1 bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInlineReplyCc('');
+                                setInlineReplyShowCc(false);
+                              }}
+                              className="text-slate-500 hover:text-white"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+
+                        {inlineReplyShowBcc && (
+                          <div className="flex items-center gap-2 bg-slate-950/70 px-3 py-1.5 rounded-xl border border-slate-800 animate-fadeIn">
+                            <span className="text-slate-400 font-semibold w-10 shrink-0">Bcc:</span>
+                            <input
+                              type="text"
+                              value={inlineReplyBcc}
+                              onChange={(e) => setInlineReplyBcc(e.target.value)}
+                              placeholder="Blind carbon copy recipients..."
+                              className="flex-1 bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInlineReplyBcc('');
+                                setInlineReplyShowBcc(false);
+                              }}
+                              className="text-slate-500 hover:text-white"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
                       </div>
 
-                      <textarea
-                        rows={4}
-                        autoFocus
-                        value={inlineReplyBody}
-                        onChange={(e) => setInlineReplyBody(e.target.value)}
-                        placeholder={`Write your ${inlineReplyMode === 'forward' ? 'forward message' : 'reply'}...`}
-                        className="w-full bg-slate-950 border border-slate-800 p-3 text-xs text-slate-200 placeholder-slate-500 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#925ce9] resize-none"
-                      />
+                      {/* Editor Section */}
+                      {inlineReplyView === 'visual' && (
+                        <div className="rounded-xl overflow-hidden border border-slate-800">
+                          <RichEditor
+                            content={inlineReplyBodyHtml || inlineReplyBodyText}
+                            onChange={(html) => {
+                              setInlineReplyBodyHtml(html);
+                              setInlineReplyBodyText(html.replace(/<[^>]+>/g, ''));
+                            }}
+                            placeholder="Type your response here..."
+                            minHeight="180px"
+                          />
+                        </div>
+                      )}
 
-                      <div className="flex items-center justify-between pt-1">
-                        <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                          <span>Sender: <strong className="text-slate-300">{selectedMailbox?.email}</strong></span>
+                      {inlineReplyView === 'html' && (
+                        <div className="rounded-xl overflow-hidden border border-slate-800 bg-slate-950 flex flex-col min-h-[180px]">
+                          <div className="bg-slate-900 border-b border-slate-800 px-3 py-1.5 text-[11px] text-slate-400 font-mono flex items-center justify-between">
+                            <span>HTML Source Editor</span>
+                            <span className="text-[10px] text-emerald-400">Direct Code Mode</span>
+                          </div>
+                          <textarea
+                            rows={7}
+                            value={inlineReplyBodyHtml}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setInlineReplyBodyHtml(val);
+                              setInlineReplyBodyText(val.replace(/<[^>]+>/g, ''));
+                            }}
+                            placeholder="<div>Write custom HTML email response...</div>"
+                            className="w-full flex-1 bg-slate-950 p-3 text-xs text-emerald-400 placeholder-slate-600 focus:outline-none resize-none font-mono leading-relaxed"
+                          />
+                        </div>
+                      )}
+
+                      {inlineReplyView === 'preview' && (
+                        <div className="border border-slate-800 rounded-xl overflow-hidden bg-white text-slate-900 shadow-inner flex flex-col min-h-[180px]">
+                          <div className="bg-slate-100 border-b border-slate-200 px-3 py-1.5 flex items-center justify-between text-[11px] text-slate-600">
+                            <span>Preview Mode</span>
+                            <span className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">Live Render</span>
+                          </div>
+                          <div
+                            className="p-4 flex-1 overflow-y-auto text-xs font-sans leading-relaxed prose prose-sm max-w-none text-slate-900"
+                            dangerouslySetInnerHTML={{
+                              __html: inlineReplyBodyHtml || inlineReplyBodyText || '<p style="color: #94a3b8; font-style: italic;">No message content written yet.</p>',
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Bottom Footer Actions (Send button, attachments, discard) */}
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+                        <div className="flex items-center gap-2">
+                          <label className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 cursor-pointer flex items-center gap-1.5 text-xs">
+                            <Paperclip className="w-4 h-4" />
+                            <span className="hidden sm:inline">Attach Files</span>
+                            <input
+                              type="file"
+                              multiple
+                              className="hidden"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files.length > 0) {
+                                  toast.info(`Attached ${e.target.files.length} file(s)`);
+                                }
+                              }}
+                            />
+                          </label>
                         </div>
 
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => setInlineReplyOpen(false)}
-                            className="px-3 py-1.5 text-xs text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                            onClick={() => {
+                              setInlineReplyBodyHtml('');
+                              setInlineReplyBodyText('');
+                              setInlineReplyOpen(false);
+                            }}
+                            className="p-2 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
+                            title="Discard draft"
                           >
-                            Cancel
+                            <Trash2 className="w-4 h-4" />
                           </button>
 
                           <button
                             type="button"
-                            disabled={inlineReplySending || !inlineReplyBody.trim()}
-                            onClick={handleSendInlineReply}
-                            className="px-5 py-1.5 bg-[#925ce9] hover:bg-[#7e43e5] disabled:opacity-50 text-white text-xs font-semibold rounded-lg shadow flex items-center gap-1.5 transition-all"
+                            disabled={inlineReplySending}
+                            onClick={() => handleSendInlineReply()}
+                            className="px-6 py-2.5 bg-gradient-to-r from-[#925ce9] to-[#7e43e5] hover:from-[#8247e5] hover:to-[#6d32d5] disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-lg shadow-[#925ce9]/30 flex items-center gap-2 transition-all"
                           >
-                            <Send className="w-3.5 h-3.5" />
+                            <Send className="w-4 h-4" />
                             <span>{inlineReplySending ? 'Sending...' : 'Send'}</span>
                           </button>
                         </div>
