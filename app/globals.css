@@ -5,12 +5,30 @@
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
+  --primary-color: #925ce9;
+  --primary-hover: #7e43e5;
 }
 
 .dark {
   --background: #020617;
   --foreground: #f8fafc;
+  --primary-color: #925ce9;
+  --primary-hover: #7e43e5;
   color-scheme: dark;
+}
+
+/* Custom Theme Color Overrides for Brand (#925ce9) */
+.bg-primary-theme {
+  background-color: #925ce9 !important;
+}
+.text-primary-theme {
+  color: #925ce9 !important;
+}
+.border-primary-theme {
+  border-color: #925ce9 !important;
+}
+.shadow-primary-theme {
+  box-shadow: 0 10px 25px -5px rgba(146, 92, 233, 0.35) !important;
 }
 
 body {

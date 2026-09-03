@@ -58,3 +58,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
+
+// DELETE: Delete a custom folder or custom tag/label
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get('type');
+    const id = searchParams.get('id');
+
+    if (!id || !type) {
+      return NextResponse.json({ success: false, message: 'Type and ID are required' }, { status: 400 });
+    }
+
+    if (type === 'folder') {
+      await pool.query('DELETE FROM custom_folders WHERE id = ?', [id]);
+      return NextResponse.json({ success: true, message: 'Custom folder deleted successfully' });
+    }
+
+    if (type === 'label' || type === 'tag') {
+      await pool.query('DELETE FROM custom_labels WHERE id = ?', [id]);
+      return NextResponse.json({ success: true, message: 'Tag / Label deleted successfully' });
+    }
+
+    return NextResponse.json({ success: false, message: 'Invalid type' }, { status: 400 });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  }
+}

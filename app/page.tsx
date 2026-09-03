@@ -69,6 +69,15 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Info,
+  PanelLeftClose,
+  PanelLeft,
+  Zap,
+  Server,
+  MessageSquare,
+  HelpCircle,
+  ChevronDown,
+  CheckCheck,
+  X,
 } from 'lucide-react';
 
 export default function MailboxApp() {
@@ -248,6 +257,9 @@ export default function MailboxApp() {
     },
   });
 
+  // Sidebar Collapse State
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   // Company Roles & Granular Permissions state
   const [companyRoles, setCompanyRoles] = useState<any[]>([]);
   const [roleModal, setRoleModal] = useState(false);
@@ -260,6 +272,11 @@ export default function MailboxApp() {
       canSendBulk: false,
       canDeleteMail: true,
       canManageFolders: true,
+      // Granular Folders & Tags permissions
+      canCreateFolders: true,
+      canDeleteFolders: true,
+      canCreateTags: true,
+      canDeleteTags: true,
       // Granular Custom Domain permissions
       canAddDomains: false,
       canEditDomains: false,
@@ -663,6 +680,10 @@ export default function MailboxApp() {
             canSendBulk: false,
             canDeleteMail: true,
             canManageFolders: true,
+            canCreateFolders: true,
+            canDeleteFolders: true,
+            canCreateTags: true,
+            canDeleteTags: true,
             canAddDomains: false,
             canEditDomains: false,
             canDeleteDomains: false,
@@ -1253,6 +1274,64 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
       }
     } catch (err: any) {
       toast.error(err.message || 'Error creating label');
+    }
+  };
+
+  const handleDeleteFolder = async (folderId: number) => {
+    if (!confirm('Are you sure you want to delete this custom folder?')) return;
+    try {
+      const res = await fetch(`/api/webmail/organization?type=folder&id=${folderId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (activeCustomFolder?.id === folderId) setActiveCustomFolder(null);
+        fetchOrganization(currentUser?.id, selectedMailbox?.id);
+        toast.success(data.message || 'Folder deleted');
+      } else {
+        toast.error(data.message || 'Failed to delete folder');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error deleting folder');
+    }
+  };
+
+  const handleDeleteLabel = async (labelId: number) => {
+    if (!confirm('Are you sure you want to delete this tag/label?')) return;
+    try {
+      const res = await fetch(`/api/webmail/organization?type=label&id=${labelId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (activeLabel?.id === labelId) setActiveLabel(null);
+        fetchOrganization(currentUser?.id, selectedMailbox?.id);
+        toast.success(data.message || 'Tag deleted');
+      } else {
+        toast.error(data.message || 'Failed to delete tag');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error deleting tag');
+    }
+  };
+
+  const handleDeleteGroup = async (listId: number) => {
+    if (!confirm('Are you sure you want to delete this contact group and all its contacts?')) return;
+    try {
+      const res = await fetch('/api/bulk-mail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete_list', listId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (currentUser?.id) fetchBulkData(currentUser.id);
+        toast.success(data.message || 'Contact group deleted');
+      } else {
+        toast.error(data.message || 'Failed to delete group');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error deleting group');
     }
   };
 
@@ -1902,31 +1981,31 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </form>
             </div>
           ) : authStep === 'select_plan' ? (
-            <div className="w-full max-w-6xl py-4 space-y-16">
-              {/* HERO SECTION */}
-              <div className="text-center space-y-6 pt-4">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>Next-Gen Enterprise Mail Server & Multi-Tenant SaaS Platform</span>
+            <div className="w-full max-w-7xl py-6 space-y-24">
+              {/* 1. HERO SECTION WITH RICH BRANDING */}
+              <div className="text-center space-y-6 pt-6 relative">
+                <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#925ce9]/10 border border-[#925ce9]/30 text-[#925ce9] text-xs font-bold tracking-wide shadow-sm shadow-[#925ce9]/10 animate-fade-in">
+                  <Sparkles className="w-4 h-4 text-[#925ce9]" />
+                  <span>Next-Gen Enterprise Mail Infrastructure & Multi-Tenant SaaS</span>
                 </div>
 
-                <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-tight max-w-4xl mx-auto">
-                  Lightning Fast, Secure & <br />
-                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.15] max-w-5xl mx-auto">
+                  High Deliverability, Lightning Fast & <br />
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#925ce9] via-indigo-400 to-purple-300">
                     Self-Hosted Professional Mailboxes
                   </span>
                 </h1>
 
-                <p className="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-                  Send, receive, and manage business emails under your own custom domains. Featuring high-deliverability Postfix SMTP, Dovecot IMAP, REST API for web apps, and modern Webmail.
+                <p className="text-slate-300 text-base sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
+                  The complete all-in-one business email suite. Connect your custom domains, allocate storage quotas, manage team roles, send bulk newsletters, and dispatch transactional emails via our high-speed REST API.
                 </p>
 
-                <div className="flex items-center justify-center gap-4 pt-2 flex-wrap">
+                <div className="flex items-center justify-center gap-4 pt-4 flex-wrap">
                   <a
                     href="#pricing"
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-bold rounded-xl shadow-xl shadow-blue-600/30 transition-all flex items-center gap-2"
+                    className="px-7 py-3.5 bg-[#925ce9] hover:bg-[#7e43e5] text-white text-sm font-bold rounded-xl shadow-xl shadow-[#925ce9]/35 transition-all flex items-center gap-2 transform hover:-translate-y-0.5"
                   >
-                    <span>Get Started Today</span>
+                    <span>Choose a Plan & Get Started</span>
                     <ArrowRight className="w-4 h-4" />
                   </a>
                   <button
@@ -1934,54 +2013,186 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                       setAuthMode('login');
                       setAuthError('');
                     }}
-                    className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-sm font-semibold rounded-xl transition-all"
+                    className="px-7 py-3.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-sm font-semibold rounded-xl transition-all shadow-md"
                   >
                     Sign In to Webmail
                   </button>
                 </div>
-              </div>
 
-              {/* LIVE FEATURE HIGHLIGHTS */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl hover:border-slate-700 transition-all shadow-lg space-y-3">
-                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
-                    <Globe className="w-6 h-6" />
+                {/* TRUST BADGES ROW */}
+                <div className="pt-8 flex flex-wrap items-center justify-center gap-8 text-xs text-slate-400 font-medium">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Postfix SMTP & Dovecot IMAP</span>
                   </div>
-                  <h3 className="text-lg font-bold text-white">Custom Domain Freedom</h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Connect unlimited domains via Cloudflare or cPanel without modifying your website IP. Automatic DKIM, SPF & DMARC DNS generation.
-                  </p>
-                </div>
-
-                <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl hover:border-slate-700 transition-all shadow-lg space-y-3">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-                    <Terminal className="w-6 h-6" />
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-[#925ce9]" />
+                    <span>Auto SPF, DKIM & DMARC</span>
                   </div>
-                  <h3 className="text-lg font-bold text-white">REST API & Next.js / PHP SDK</h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Send transactional emails directly from your website or eCommerce apps with a single HTTP POST request. Zero complex SMTP configurations.
-                  </p>
-                </div>
-
-                <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl hover:border-slate-700 transition-all shadow-lg space-y-3">
-                  <div className="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20">
-                    <HardDrive className="w-6 h-6" />
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-blue-400" />
+                    <span>REST API (No SMTP Library Needed)</span>
                   </div>
-                  <h3 className="text-lg font-bold text-white">Flexible Quota & Sub-Users</h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Allocate custom GB storage quotas per mailbox. Grant team members granular role permissions with individual email signatures.
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-amber-400" />
+                    <span>99.99% Server Uptime Guarantee</span>
+                  </div>
                 </div>
               </div>
 
-              {/* PRICING SECTION */}
+              {/* 2. LIVE PLATFORM METRICS SHOWCASE */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-slate-900/90 border border-slate-800/90 p-6 rounded-2xl text-center space-y-1 shadow-lg hover:border-[#925ce9]/40 transition-all">
+                  <span className="text-3xl sm:text-4xl font-black text-white font-mono">100%</span>
+                  <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Cloudflare Compatible</p>
+                  <p className="text-[11px] text-slate-500">Zero IP conflicts with origin</p>
+                </div>
+                <div className="bg-slate-900/90 border border-slate-800/90 p-6 rounded-2xl text-center space-y-1 shadow-lg hover:border-[#925ce9]/40 transition-all">
+                  <span className="text-3xl sm:text-4xl font-black text-[#925ce9] font-mono">15ms</span>
+                  <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">REST API Dispatch</p>
+                  <p className="text-[11px] text-slate-500">Instant transactional delivery</p>
+                </div>
+                <div className="bg-slate-900/90 border border-slate-800/90 p-6 rounded-2xl text-center space-y-1 shadow-lg hover:border-[#925ce9]/40 transition-all">
+                  <span className="text-3xl sm:text-4xl font-black text-emerald-400 font-mono">100%</span>
+                  <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Isolated Storage</p>
+                  <p className="text-[11px] text-slate-500">Encrypted Maildir architecture</p>
+                </div>
+                <div className="bg-slate-900/90 border border-slate-800/90 p-6 rounded-2xl text-center space-y-1 shadow-lg hover:border-[#925ce9]/40 transition-all">
+                  <span className="text-3xl sm:text-4xl font-black text-amber-400 font-mono">24/7</span>
+                  <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Multi-Tenant Engine</p>
+                  <p className="text-[11px] text-slate-500">Super admin billing & oversight</p>
+                </div>
+              </div>
+
+              {/* 3. SIX CORE FEATURE MODULES (EXPANDED GRID) */}
+              <div className="space-y-6">
+                <div className="text-center space-y-2 max-w-2xl mx-auto">
+                  <span className="text-xs font-bold uppercase tracking-widest text-[#925ce9] bg-[#925ce9]/10 px-3 py-1 rounded-full border border-[#925ce9]/20">
+                    Enterprise Capabilities
+                  </span>
+                  <h2 className="text-3xl font-extrabold text-white">Engineered for Reliability & Scale</h2>
+                  <p className="text-xs text-slate-400">Everything your business needs for communications, security, and developer integrations.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Feature 1 */}
+                  <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl hover:border-[#925ce9]/50 transition-all shadow-lg space-y-3 group">
+                    <div className="w-12 h-12 rounded-xl bg-[#925ce9]/10 text-[#925ce9] flex items-center justify-center border border-[#925ce9]/20 group-hover:scale-110 transition-transform">
+                      <Globe className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-lg font-bold text-white group-hover:text-[#925ce9] transition-colors">Custom Domain Freedom</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Add, edit, and delete company domains without touching your main server IP. Generates 1-click Cloudflare DNS records (MX, TXT SPF, DKIM & DMARC).
+                    </p>
+                  </div>
+
+                  {/* Feature 2 */}
+                  <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl hover:border-[#925ce9]/50 transition-all shadow-lg space-y-3 group">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 group-hover:scale-110 transition-transform">
+                      <Terminal className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors">REST API & SDKs (v1)</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Send transactional emails directly from Next.js, Node.js, Python, or PHP with a simple HTTP POST request. No complex SMTP credentials required in code.
+                    </p>
+                  </div>
+
+                  {/* Feature 3 */}
+                  <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl hover:border-[#925ce9]/50 transition-all shadow-lg space-y-3 group">
+                    <div className="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20 group-hover:scale-110 transition-transform">
+                      <HardDrive className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-lg font-bold text-white group-hover:text-purple-400 transition-colors">Typable Storage Quotas</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Type exact custom storage allocations in MB or GB for each employee mailbox with automatic plan ceiling limits and realtime usage monitoring.
+                    </p>
+                  </div>
+
+                  {/* Feature 4 */}
+                  <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl hover:border-[#925ce9]/50 transition-all shadow-lg space-y-3 group">
+                    <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20 group-hover:scale-110 transition-transform">
+                      <Sparkles className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">Bulk Campaigns & Contact Groups</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Import CSV contact lists, organize target groups, and send personalized marketing newsletters with dynamic template tags like {"{{name}}"} and {"{{company}}"}.
+                    </p>
+                  </div>
+
+                  {/* Feature 5 */}
+                  <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl hover:border-[#925ce9]/50 transition-all shadow-lg space-y-3 group">
+                    <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20 group-hover:scale-110 transition-transform">
+                      <ShieldCheck className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Granular Role Permissions</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Define custom team roles with granular CRUD checkboxes for Email Templates, Custom Domains, Mailboxes, REST API access, and Mailbox Switching.
+                    </p>
+                  </div>
+
+                  {/* Feature 6 */}
+                  <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl hover:border-[#925ce9]/50 transition-all shadow-lg space-y-3 group">
+                    <div className="w-12 h-12 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center border border-rose-500/20 group-hover:scale-110 transition-transform">
+                      <FileText className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-lg font-bold text-white group-hover:text-rose-400 transition-colors">HTML Signature & Templates</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Design rich HTML email signatures with company logos, social links, and custom styles, plus reusable category-tagged email templates.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. HOW IT WORKS (3-STEP ONBOARDING WALKTHROUGH) */}
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-8 sm:p-12 space-y-8">
+                <div className="text-center space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                    Quick Setup Guide
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-white">Get Your Mail Server Running in 3 Minutes</h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+                  <div className="space-y-3 relative">
+                    <div className="w-10 h-10 rounded-full bg-[#925ce9] text-white flex items-center justify-center font-bold text-base shadow-lg shadow-[#925ce9]/40">
+                      1
+                    </div>
+                    <h3 className="text-base font-bold text-white">Select Plan & Register</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Choose your company package, provide business info, and submit your registration.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3 relative">
+                    <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-base shadow-lg shadow-blue-600/40">
+                      2
+                    </div>
+                    <h3 className="text-base font-bold text-white">Connect Custom Domain</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Add your domain (e.g. brand.com) and copy the generated Cloudflare DNS records (MX, SPF, DKIM).
+                    </p>
+                  </div>
+
+                  <div className="space-y-3 relative">
+                    <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-base shadow-lg shadow-emerald-600/40">
+                      3
+                    </div>
+                    <h3 className="text-base font-bold text-white">Create Mailboxes & Send</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Create employee email addresses, set individual signatures, and start sending via Webmail or REST API.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. PRICING SECTION WITH THEME ACCENT */}
               <div id="pricing" className="pt-6 space-y-8">
                 <div className="text-center space-y-2">
-                  <span className="text-xs font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
-                    Transparent Pricing Plans
+                  <span className="text-xs font-bold uppercase tracking-widest text-[#925ce9] bg-[#925ce9]/10 px-3 py-1 rounded-full border border-[#925ce9]/20">
+                    Transparent SaaS Pricing
                   </span>
                   <h2 className="text-3xl font-extrabold text-white">Choose the Right Plan for Your Business</h2>
-                  <p className="text-sm text-slate-400">Scale your communication infrastructure effortlessly with zero lock-in contracts.</p>
+                  <p className="text-xs text-slate-400">Scale your communication infrastructure effortlessly with zero lock-in contracts.</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1993,12 +2204,12 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                         onClick={() => setSelectedPlanForRegistration(plan)}
                         className={`bg-slate-900 rounded-2xl p-7 border cursor-pointer transition-all flex flex-col justify-between relative ${
                           isSelected
-                            ? 'border-blue-500 ring-2 ring-blue-500/50 shadow-2xl shadow-blue-500/20 bg-slate-900'
+                            ? 'border-[#925ce9] ring-2 ring-[#925ce9]/50 shadow-2xl shadow-[#925ce9]/25 bg-slate-900'
                             : 'border-slate-800 hover:border-slate-700'
                         }`}
                       >
                         {plan.price_monthly > 15 && (
-                          <span className="absolute -top-3 right-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider shadow">
+                          <span className="absolute -top-3 right-6 bg-[#925ce9] text-white text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider shadow-md">
                             Most Popular
                           </span>
                         )}
@@ -2006,7 +2217,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                         <div>
                           <div className="flex items-center justify-between mb-2">
                             <h3 className="text-xl font-bold text-white">{plan.name}</h3>
-                            {isSelected && <Check className="w-5 h-5 text-blue-400" />}
+                            {isSelected && <Check className="w-5 h-5 text-[#925ce9]" />}
                           </div>
                           <div className="mt-2 mb-6">
                             <span className="text-4xl font-extrabold text-white">${plan.price_monthly}</span>
@@ -2045,7 +2256,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                           }}
                           className={`w-full mt-8 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                             isSelected
-                              ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30'
+                              ? 'bg-[#925ce9] hover:bg-[#7e43e5] text-white shadow-lg shadow-[#925ce9]/30'
                               : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
                           }`}
                         >
@@ -2058,19 +2269,62 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 </div>
               </div>
 
-              {/* ENTERPRISE TRUST & SECURITY FOOTER BADGE */}
-              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-400">
-                <div className="flex items-center gap-3">
-                  <ShieldCheck className="w-6 h-6 text-emerald-400 shrink-0" />
-                  <div>
-                    <h4 className="text-sm font-bold text-white">Enterprise Privacy & Security</h4>
-                    <p className="text-[11px] text-slate-400">Fully compliant with SPF, DKIM, DMARC, and TLS 1.3 encryption.</p>
+              {/* 6. FREQUENTLY ASKED QUESTIONS (FAQ) */}
+              <div className="max-w-4xl mx-auto space-y-6">
+                <div className="text-center space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
+                    Got Questions?
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-white">Frequently Asked Questions</h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-2">
+                    <h4 className="text-sm font-bold text-white">Can I keep my website on my current server/cPanel?</h4>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Yes! You simply point your domain&apos;s MX and SPF DNS records to this mail platform. Your website IP and hosting remain 100% unaffected.
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-2">
+                    <h4 className="text-sm font-bold text-white">How does the REST API work without SMTP?</h4>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      You generate an API Key under the Email REST API tab. Your frontend/backend code makes an HTTP POST request to <code>/api/v1/send</code> with JSON payload.
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-2">
+                    <h4 className="text-sm font-bold text-white">Can users have individual HTML signatures?</h4>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Yes! Each mailbox account can have its own dedicated HTML or plaintext email signature, plus company-wide branding footers.
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-2">
+                    <h4 className="text-sm font-bold text-white">How are storage space quotas managed?</h4>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Company administrators can allocate specific MB or GB to each employee account, up to the total limit of their active subscription package.
+                    </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 text-slate-400 text-xs">
-                  <span>🔒 99.9% Uptime Guarantee</span>
+              </div>
+
+              {/* 7. ENTERPRISE FOOTER */}
+              <div className="border-t border-slate-800/80 pt-8 pb-4 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-lg bg-[#925ce9] flex items-center justify-center text-white">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <span className="font-bold text-white">MailBox Pro Enterprise</span>
                   <span>•</span>
-                  <span>⚡ 24/7 Server Monitoring</span>
+                  <span>All Rights Reserved &copy; 2026</span>
+                </div>
+                <div className="flex items-center gap-4 text-slate-400 text-xs">
+                  <span>🔒 TLS 1.3 Encryption</span>
+                  <span>•</span>
+                  <span>🛡️ Anti-Spam Protected</span>
+                  <span>•</span>
+                  <span>⚡ Postfix / Dovecot Engine</span>
                 </div>
               </div>
             </div>
@@ -2319,69 +2573,91 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
   // =========================================================================
   return (
     <div className="flex h-screen w-full bg-slate-950 text-slate-100 font-sans overflow-hidden">
-      {/* 1. Global Navigation Sidebar */}
-      <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0">
+      {/* 1. Global Navigation Sidebar (Collapsible with Hover Tooltips) */}
+      <aside
+        className={`bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0 transition-all duration-300 relative z-30 ${
+          sidebarCollapsed ? 'w-16' : 'w-64'
+        }`}
+      >
         <div>
-          {/* Brand Logo & User Info */}
-          <div className="p-4 border-b border-slate-800">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <Mail className="w-5 h-5 text-white" />
+          {/* Brand Logo, User Info & Collapse Toggle */}
+          <div className="p-3.5 border-b border-slate-800">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 overflow-hidden">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#925ce9] to-indigo-500 flex items-center justify-center shadow-lg shadow-[#925ce9]/25 shrink-0">
+                  <Mail className="w-4.5 h-4.5 text-white" />
+                </div>
+                {!sidebarCollapsed && (
+                  <div className="overflow-hidden">
+                    <h1 className="font-bold text-sm text-white truncate">MailBox Pro</h1>
+                    <p className="text-[10px] text-[#925ce9] font-semibold truncate">{currentUser.plan_name || 'Active'}</p>
+                  </div>
+                )}
               </div>
-              <div className="overflow-hidden">
-                <h1 className="font-bold text-base text-white truncate">MailBox Pro</h1>
-                <p className="text-[11px] text-emerald-400 font-medium truncate">{currentUser.plan_name || 'Active'}</p>
-              </div>
+
+              {/* Sidebar Collapse Toggle Button */}
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                title={sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors shrink-0"
+              >
+                {sidebarCollapsed ? <PanelLeft className="w-4 h-4 text-[#925ce9]" /> : <PanelLeftClose className="w-4 h-4" />}
+              </button>
             </div>
 
-            <div className="mt-3 pt-3 border-t border-slate-800/80">
-              {currentUser.company_name && (
-                <div className="mb-2 px-2 py-1 bg-slate-800/80 rounded-lg border border-slate-700/60 flex items-center gap-1.5 text-xs text-amber-300">
-                  <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span className="font-bold truncate text-[11px]">{currentUser.company_name}</span>
-                </div>
-              )}
-              <div className="flex items-center justify-between">
-                <div className="text-xs truncate max-w-[130px]">
-                  <p className="font-semibold text-slate-200 truncate">{currentUser.name}</p>
-                  <p className="text-[10px] text-slate-400 truncate">
-                    {currentUser.role === 'admin' || currentUser.role === 'superadmin' ? '⚡ Super Admin' : currentUser.email}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={toggleTheme}
-                    title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
-                    className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition-colors"
-                  >
-                    {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-300" />}
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    title="Log Out"
-                    className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-slate-800 transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </button>
+            {!sidebarCollapsed && (
+              <div className="mt-3 pt-3 border-t border-slate-800/80">
+                {currentUser.company_name && (
+                  <div className="mb-2 px-2 py-1 bg-slate-800/80 rounded-lg border border-slate-700/60 flex items-center gap-1.5 text-xs text-amber-300">
+                    <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span className="font-bold truncate text-[11px]">{currentUser.company_name}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <div className="text-xs truncate max-w-[130px]">
+                    <p className="font-semibold text-slate-200 truncate">{currentUser.name}</p>
+                    <p className="text-[10px] text-slate-400 truncate">
+                      {currentUser.role === 'admin' || currentUser.role === 'superadmin' ? '⚡ Super Admin' : currentUser.email}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={toggleTheme}
+                      title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+                      className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition-colors"
+                    >
+                      {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-300" />}
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      title="Log Out"
+                      className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-slate-800 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Navigation Links */}
-          <nav className="p-3 space-y-1">
+          <nav className="p-2 space-y-1">
             <button
               onClick={() => {
                 setActiveTab('overview');
                 if (currentUser?.id) fetchBilling(currentUser.id);
                 if (currentUser?.role === 'admin' || currentUser?.role === 'superadmin') fetchAdminData();
               }}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'overview' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
+              title="Dashboard Overview"
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                activeTab === 'overview'
+                  ? 'bg-[#925ce9] text-white shadow-lg shadow-[#925ce9]/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+              } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
-              <LayoutDashboard className="w-4 h-4 text-blue-400" />
-              <span>Dashboard Overview</span>
+              <LayoutDashboard className={`w-4 h-4 shrink-0 ${activeTab === 'overview' ? 'text-white' : 'text-[#925ce9]'}`} />
+              {!sidebarCollapsed && <span>Dashboard Overview</span>}
             </button>
 
             <button
@@ -2390,54 +2666,77 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 setActiveCustomFolder(null);
                 setActiveLabel(null);
               }}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'webmail' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
+              title="Webmail Client"
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                activeTab === 'webmail'
+                  ? 'bg-[#925ce9] text-white shadow-lg shadow-[#925ce9]/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+              } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
-              <Inbox className="w-4 h-4" />
-              <span>Webmail Client</span>
+              <Inbox className="w-4 h-4 shrink-0" />
+              {!sidebarCollapsed && <span>Webmail Client</span>}
             </button>
 
-            {/* Domains Tab (Visible if Admin or has Domain permissions) */}
+            {/* Domains Tab */}
             {(currentUser.role !== 'mailbox_user' || currentUser?.permissions?.canAddDomains || currentUser?.permissions?.canEditDomains || currentUser?.permissions?.canDeleteDomains) && (
               <button
                 onClick={() => setActiveTab('domains')}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'domains' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                }`}
+                title="Custom Domains"
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  activeTab === 'domains'
+                    ? 'bg-[#925ce9] text-white shadow-lg shadow-[#925ce9]/30'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                } ${sidebarCollapsed ? 'justify-center' : ''}`}
               >
-                <Globe className="w-4 h-4" />
-                <span>Custom Domains</span>
-                <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">{domains.length}</span>
+                <Globe className="w-4 h-4 shrink-0" />
+                {!sidebarCollapsed && (
+                  <>
+                    <span>Custom Domains</span>
+                    <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">{domains.length}</span>
+                  </>
+                )}
               </button>
             )}
 
-            {/* Mailboxes Tab (Visible if Admin or has Mailbox permissions) */}
+            {/* Mailboxes Tab */}
             {(currentUser.role !== 'mailbox_user' || currentUser?.permissions?.canCreateMailboxes || currentUser?.permissions?.canEditMailboxes || currentUser?.permissions?.canDeleteMailboxes) && (
               <button
                 onClick={() => setActiveTab('mailboxes')}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'mailboxes' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                }`}
+                title="Mailboxes (Users)"
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  activeTab === 'mailboxes'
+                    ? 'bg-[#925ce9] text-white shadow-lg shadow-[#925ce9]/30'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                } ${sidebarCollapsed ? 'justify-center' : ''}`}
               >
-                <Users className="w-4 h-4" />
-                <span>Mailboxes (Users)</span>
-                <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">
-                  {mailboxes.length}{currentUser.max_mailboxes ? `/${currentUser.max_mailboxes}` : ''}
-                </span>
+                <Users className="w-4 h-4 shrink-0" />
+                {!sidebarCollapsed && (
+                  <>
+                    <span>Mailboxes (Users)</span>
+                    <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">
+                      {mailboxes.length}{currentUser.max_mailboxes ? `/${currentUser.max_mailboxes}` : ''}
+                    </span>
+                  </>
+                )}
               </button>
             )}
 
             {/* Bulk Mail Campaign Tab */}
             {(currentUser.role !== 'mailbox_user' || currentUser?.permissions?.canSendBulk) && (
               <button
-                onClick={() => setActiveTab('bulk')}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'bulk' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                }`}
+                onClick={() => {
+                  setActiveTab('bulk');
+                  if (currentUser?.id) fetchBulkData(currentUser.id);
+                }}
+                title="Bulk Mail Campaign"
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  activeTab === 'bulk'
+                    ? 'bg-[#925ce9] text-white shadow-lg shadow-[#925ce9]/30'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                } ${sidebarCollapsed ? 'justify-center' : ''}`}
               >
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <span>Bulk Mail Campaign</span>
+                <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                {!sidebarCollapsed && <span>Bulk Campaigns</span>}
               </button>
             )}
 
@@ -2448,29 +2747,43 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   setActiveTab('apikeys');
                   if (currentUser?.id) fetchApiKeys(currentUser.id);
                 }}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'apikeys' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                }`}
+                title="Email REST API (v1)"
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  activeTab === 'apikeys'
+                    ? 'bg-[#925ce9] text-white shadow-lg shadow-[#925ce9]/30'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                } ${sidebarCollapsed ? 'justify-center' : ''}`}
               >
-                <KeyRound className="w-4 h-4 text-emerald-400" />
-                <span>Email REST API</span>
-                <span className="ml-auto text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-mono">v1</span>
+                <KeyRound className="w-4 h-4 text-emerald-400 shrink-0" />
+                {!sidebarCollapsed && (
+                  <>
+                    <span>Email REST API</span>
+                    <span className="ml-auto text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-mono">v1</span>
+                  </>
+                )}
               </button>
             )}
 
-            {/* Email Templates Tab (Always visible or guarded by canCreateTemplates/canEditTemplates) */}
+            {/* Email Templates Tab */}
             <button
               onClick={() => {
                 setActiveTab('templates');
                 if (currentUser?.id) fetchTemplates(currentUser.id);
               }}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'templates' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
+              title="Email Templates Library"
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                activeTab === 'templates'
+                  ? 'bg-[#925ce9] text-white shadow-lg shadow-[#925ce9]/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+              } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
-              <FileText className="w-4 h-4 text-indigo-400" />
-              <span>Email Templates</span>
-              <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">{emailTemplates.length}</span>
+              <FileText className="w-4 h-4 text-indigo-400 shrink-0" />
+              {!sidebarCollapsed && (
+                <>
+                  <span>Email Templates</span>
+                  <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">{emailTemplates.length}</span>
+                </>
+              )}
             </button>
 
             {currentUser.role !== 'mailbox_user' && (
@@ -2479,16 +2792,23 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   setActiveTab('billing');
                   if (currentUser?.id) fetchBilling(currentUser.id);
                 }}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'billing' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                }`}
+                title="Billing & Invoices"
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  activeTab === 'billing'
+                    ? 'bg-[#925ce9] text-white shadow-lg shadow-[#925ce9]/30'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                } ${sidebarCollapsed ? 'justify-center' : ''}`}
               >
-                <Receipt className="w-4 h-4 text-amber-400" />
-                <span>Billing & Invoices</span>
-                {billingSummary?.pendingUpgrade && (
-                  <span className="ml-auto text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-bold animate-pulse">
-                    Pending
-                  </span>
+                <Receipt className="w-4 h-4 text-amber-400 shrink-0" />
+                {!sidebarCollapsed && (
+                  <>
+                    <span>Billing & Invoices</span>
+                    {billingSummary?.pendingUpgrade && (
+                      <span className="ml-auto text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-bold animate-pulse">
+                        Pending
+                      </span>
+                    )}
+                  </>
                 )}
               </button>
             )}
@@ -2499,12 +2819,13 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   setActiveTab('superadmin');
                   fetchAdminData();
                 }}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                title="Super Admin Control Panel"
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   activeTab === 'superadmin' ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30' : 'text-purple-300 hover:text-white hover:bg-purple-900/30'
-                }`}
+                } ${sidebarCollapsed ? 'justify-center' : ''}`}
               >
-                <ShieldCheck className="w-4 h-4 text-purple-400" />
-                <span>Super Admin Panel</span>
+                <ShieldCheck className="w-4 h-4 text-purple-400 shrink-0" />
+                {!sidebarCollapsed && <span>Super Admin Panel</span>}
               </button>
             )}
 
@@ -2513,65 +2834,77 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 setActiveTab('settings');
                 if (currentUser?.id) fetchSettings(currentUser.id);
               }}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'settings' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
+              title="Settings & Branding"
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                activeTab === 'settings'
+                  ? 'bg-[#925ce9] text-white shadow-lg shadow-[#925ce9]/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+              } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
-              <Settings2 className="w-4 h-4 text-slate-400" />
-              <span>Settings & Profile</span>
+              <Settings2 className="w-4 h-4 text-slate-400 shrink-0" />
+              {!sidebarCollapsed && <span>Settings & Profile</span>}
             </button>
           </nav>
         </div>
 
         {/* Storage Bar & Quota Warnings */}
-        <div className="p-4 border-t border-slate-800 bg-slate-900/50">
-          <div className="flex items-center justify-between text-[11px] mb-1.5 font-medium">
-            <span className="flex items-center gap-1.5 text-slate-300">
-              <HardDrive className="w-3.5 h-3.5" /> Storage Quota
-            </span>
-            <span className={isStorageCritical ? 'text-rose-400 font-bold' : 'text-slate-400'}>
-              {usedMb.toFixed(1)} MB / {maxQuotaMb} MB
-            </span>
-          </div>
+        <div className="p-3 border-t border-slate-800 bg-slate-900/50">
+          {!sidebarCollapsed ? (
+            <>
+              <div className="flex items-center justify-between text-[11px] mb-1.5 font-medium">
+                <span className="flex items-center gap-1.5 text-slate-300">
+                  <HardDrive className="w-3.5 h-3.5 text-[#925ce9]" /> Storage Quota
+                </span>
+                <span className={isStorageCritical ? 'text-rose-400 font-bold' : 'text-slate-400'}>
+                  {usedMb.toFixed(1)} MB / {maxQuotaMb} MB
+                </span>
+              </div>
 
-          <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden mb-2">
-            <div
-              className={`h-full transition-all ${
-                isStorageCritical ? 'bg-rose-500' : usagePercent > 60 ? 'bg-amber-500' : 'bg-blue-500'
-              }`}
-              style={{ width: `${Math.max(4, usagePercent)}%` }}
-            />
-          </div>
+              <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden mb-2">
+                <div
+                  className={`h-full transition-all ${
+                    isStorageCritical ? 'bg-rose-500' : usagePercent > 60 ? 'bg-amber-500' : 'bg-[#925ce9]'
+                  }`}
+                  style={{ width: `${Math.max(4, usagePercent)}%` }}
+                />
+              </div>
 
-          {isStorageCritical && (
-            <div className="p-2 bg-rose-500/10 border border-rose-500/30 rounded text-[10px] text-rose-300 flex items-center gap-1.5 mb-2">
-              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-              <span>Storage nearly full! Clean trash or upgrade package.</span>
-            </div>
-          )}
+              {isStorageCritical && (
+                <div className="p-2 bg-rose-500/10 border border-rose-500/30 rounded text-[10px] text-rose-300 flex items-center gap-1.5 mb-2">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Storage nearly full! Clean trash or upgrade.</span>
+                </div>
+              )}
 
-          {/* Mailbox Switcher (Only visible if company admin, superadmin, or user has canSwitchMailbox permission) */}
-          {(currentUser.role !== 'mailbox_user' || currentUser?.permissions?.canSwitchMailbox) && mailboxes.length > 1 ? (
-            <div className="mt-2">
-              <label className="block text-[10px] text-slate-400 font-semibold mb-1">Switch Active Mailbox</label>
-              <select
-                value={selectedMailbox?.id || ''}
-                onChange={(e) => {
-                  const found = mailboxes.find((m) => m.id === Number(e.target.value));
-                  setSelectedMailbox(found || null);
-                }}
-                className="w-full bg-slate-800 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                {mailboxes.map((mb) => (
-                  <option key={mb.id} value={mb.id}>
-                    {mb.email}
-                  </option>
-                ))}
-              </select>
-            </div>
+              {/* Mailbox Switcher */}
+              {(currentUser.role !== 'mailbox_user' || currentUser?.permissions?.canSwitchMailbox) && mailboxes.length > 1 ? (
+                <div className="mt-2">
+                  <label className="block text-[10px] text-slate-400 font-semibold mb-1">Switch Active Mailbox</label>
+                  <select
+                    value={selectedMailbox?.id || ''}
+                    onChange={(e) => {
+                      const found = mailboxes.find((m) => m.id === Number(e.target.value));
+                      setSelectedMailbox(found || null);
+                    }}
+                    className="w-full bg-slate-800 border border-slate-700 text-xs rounded-lg px-2 py-1.5 text-slate-200 focus:outline-none focus:ring-1 focus:ring-[#925ce9]"
+                  >
+                    {mailboxes.map((mb) => (
+                      <option key={mb.id} value={mb.id}>
+                        {mb.email}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="mt-2 text-[11px] font-mono text-slate-400 truncate bg-slate-950/80 px-2.5 py-1.5 rounded-lg border border-slate-800">
+                  ✉ {selectedMailbox?.email || currentUser.email}
+                </div>
+              )}
+            </>
           ) : (
-            <div className="mt-2 text-[11px] font-mono text-slate-400 truncate bg-slate-950/80 px-2.5 py-1.5 rounded-lg border border-slate-800">
-              ✉ {selectedMailbox?.email || currentUser.email}
+            <div className="flex flex-col items-center gap-2" title={`Storage: ${usedMb.toFixed(1)} / ${maxQuotaMb} MB`}>
+              <HardDrive className={`w-4 h-4 ${isStorageCritical ? 'text-rose-400' : 'text-[#925ce9]'}`} />
+              <span className="text-[9px] font-mono text-slate-400">{usagePercent}%</span>
             </div>
           )}
         </div>
@@ -2929,10 +3262,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 <div className="pt-3 border-t border-slate-800/80 mb-4">
                   <div className="flex items-center justify-between px-2 mb-2">
                     <span className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Custom Folders</span>
-                    {(currentUser?.role !== 'sub_user' || currentUser?.permissions?.canManageFolders) && (
+                    {(currentUser?.role !== 'mailbox_user' || (currentUser?.permissions?.canCreateFolders ?? currentUser?.permissions?.canManageFolders)) && (
                       <button
                         onClick={() => setCreateFolderModal(true)}
-                        className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800"
+                        className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
                         title="Create New Folder"
                       >
                         <Plus className="w-3.5 h-3.5" />
@@ -2940,60 +3273,100 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     )}
                   </div>
                   <div className="space-y-1">
-                    {customFolders.map((f) => {
-                      const isActive = activeCustomFolder?.id === f.id;
-                      return (
-                        <button
-                          key={f.id}
-                          onClick={() => {
-                            setActiveCustomFolder(f);
-                            setActiveLabel(null);
-                          }}
-                          className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                            isActive ? 'bg-slate-800 text-blue-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-                          }`}
-                        >
-                          <Folder className="w-3.5 h-3.5" style={{ color: f.color }} />
-                          <span className="truncate">{f.name}</span>
-                        </button>
-                      );
-                    })}
+                    {customFolders.length === 0 ? (
+                      <p className="px-3 py-1 text-[11px] text-slate-500 italic">No custom folders</p>
+                    ) : (
+                      customFolders.map((f) => {
+                        const isActive = activeCustomFolder?.id === f.id;
+                        return (
+                          <div
+                            key={f.id}
+                            className={`group w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              isActive ? 'bg-slate-800 text-[#925ce9] font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                            }`}
+                          >
+                            <button
+                              onClick={() => {
+                                setActiveCustomFolder(f);
+                                setActiveLabel(null);
+                              }}
+                              className="flex items-center gap-2.5 truncate flex-1 text-left"
+                            >
+                              <Folder className="w-3.5 h-3.5 shrink-0" style={{ color: f.color || '#925ce9' }} />
+                              <span className="truncate">{f.name}</span>
+                            </button>
+                            {(currentUser?.role !== 'mailbox_user' || (currentUser?.permissions?.canDeleteFolders ?? currentUser?.permissions?.canManageFolders)) && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteFolder(f.id);
+                                }}
+                                title="Delete folder"
+                                className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-rose-400 rounded transition-opacity"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
 
                 {/* Custom Labels Section */}
                 <div className="pt-3 border-t border-slate-800/80">
                   <div className="flex items-center justify-between px-2 mb-2">
-                    <span className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Labels</span>
-                    {(currentUser?.role !== 'sub_user' || currentUser?.permissions?.canManageTags) && (
+                    <span className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Tags & Labels</span>
+                    {(currentUser?.role !== 'mailbox_user' || (currentUser?.permissions?.canCreateTags ?? currentUser?.permissions?.canManageTags)) && (
                       <button
                         onClick={() => setCreateLabelModal(true)}
-                        className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800"
-                        title="Create New Label"
+                        className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
+                        title="Create New Tag / Label"
                       >
                         <Plus className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
                   <div className="space-y-1">
-                    {customLabels.map((l) => {
-                      const isActive = activeLabel?.id === l.id;
-                      return (
-                        <button
-                          key={l.id}
-                          onClick={() => {
-                            setActiveLabel(l);
-                            setActiveCustomFolder(null);
-                          }}
-                          className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                            isActive ? 'bg-slate-800 text-emerald-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-                          }`}
-                        >
-                          <Tag className="w-3.5 h-3.5" style={{ color: l.color }} />
-                          <span className="truncate">{l.name}</span>
-                        </button>
-                      );
-                    })}
+                    {customLabels.length === 0 ? (
+                      <p className="px-3 py-1 text-[11px] text-slate-500 italic">No tags created</p>
+                    ) : (
+                      customLabels.map((l) => {
+                        const isActive = activeLabel?.id === l.id;
+                        return (
+                          <div
+                            key={l.id}
+                            className={`group w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              isActive ? 'bg-slate-800 text-emerald-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                            }`}
+                          >
+                            <button
+                              onClick={() => {
+                                setActiveLabel(l);
+                                setActiveCustomFolder(null);
+                              }}
+                              className="flex items-center gap-2.5 truncate flex-1 text-left"
+                            >
+                              <Tag className="w-3.5 h-3.5 shrink-0" style={{ color: l.color || '#10b981' }} />
+                              <span className="truncate">{l.name}</span>
+                            </button>
+                            {(currentUser?.role !== 'mailbox_user' || (currentUser?.permissions?.canDeleteTags ?? currentUser?.permissions?.canManageTags)) && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteLabel(l.id);
+                                }}
+                                title="Delete tag"
+                                className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-rose-400 rounded transition-opacity"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               </div>
@@ -3819,27 +4192,36 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {contactLists.map((grp) => (
-                      <div key={grp.id} className="bg-slate-950 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between">
-                        <div>
+                      <div key={grp.id} className="bg-slate-950 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between group">
+                        <div className="flex-1 pr-3">
                           <h4 className="text-xs font-bold text-white flex items-center gap-2">
                             <span>{grp.name}</span>
-                            <span className="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full font-medium border border-blue-500/20">
+                            <span className="text-[10px] bg-[#925ce9]/10 text-[#925ce9] px-2 py-0.5 rounded-full font-medium border border-[#925ce9]/20">
                               {grp.contact_count} contacts
                             </span>
                           </h4>
-                          <p className="text-[11px] text-slate-400 mt-1 truncate max-w-xs">
+                          <p className="text-[11px] text-slate-400 mt-1 truncate max-w-xs font-mono">
                             Sample: {grp.contacts?.slice(0, 3).map((c: any) => c.email).join(', ') || 'No contacts yet'}
                           </p>
                         </div>
-                        <button
-                          onClick={() => {
-                            setBulkData((prev) => ({ ...prev, listId: grp.id.toString() }));
-                            setBulkModal(true);
-                          }}
-                          className="px-3 py-1 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/30 text-xs rounded font-medium transition-colors"
-                        >
-                          Send to Group
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              setBulkData((prev) => ({ ...prev, listId: grp.id.toString() }));
+                              setBulkModal(true);
+                            }}
+                            className="px-3 py-1.5 bg-[#925ce9]/10 hover:bg-[#925ce9]/20 text-[#925ce9] border border-[#925ce9]/30 text-xs rounded-lg font-medium transition-colors"
+                          >
+                            Send
+                          </button>
+                          <button
+                            onClick={() => handleDeleteGroup(grp.id)}
+                            title="Delete Contact Group"
+                            className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -5610,42 +5992,50 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
         </div>
       )}
 
-      {/* ===================== MODAL: CREATE CUSTOM FOLDER ===================== */}
+      {/* ===================== DRAWER: CREATE CUSTOM FOLDER ===================== */}
       {createFolderModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-5 shadow-2xl">
-            <h3 className="text-sm font-bold text-white mb-3">Create Custom Folder</h3>
-            <form onSubmit={handleCreateFolder} className="space-y-3">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-end">
+          <div className="bg-slate-900 border-l border-slate-800 w-full max-w-md h-full shadow-2xl flex flex-col p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Folder className="w-5 h-5 text-[#925ce9]" />
+                <span>Create Custom Folder</span>
+              </h3>
+              <button onClick={() => setCreateFolderModal(false)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateFolder} className="space-y-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Folder Name</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Folder Name *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Invoices or Projects"
+                  placeholder="e.g. Invoices, Projects, VIP"
                   value={newFolderName}
                   onChange={(e) => setNewFolderName(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 px-3 py-2 text-xs text-white rounded-lg"
+                  className="w-full bg-slate-800 border border-slate-700 px-3 py-2 text-xs text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-[#925ce9]"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Folder Color</label>
-                <div className="flex gap-2">
-                  {['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'].map((c) => (
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Folder Accent Color</label>
+                <div className="flex gap-2.5">
+                  {['#925ce9', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'].map((c) => (
                     <button
                       key={c}
                       type="button"
                       onClick={() => setNewFolderColor(c)}
-                      className={`w-6 h-6 rounded-full border-2 ${newFolderColor === c ? 'border-white scale-110' : 'border-transparent'}`}
+                      className={`w-7 h-7 rounded-full border-2 transition-transform ${newFolderColor === c ? 'border-white scale-110 shadow-lg' : 'border-transparent'}`}
                       style={{ backgroundColor: c }}
                     />
                   ))}
                 </div>
               </div>
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
-                <button type="button" onClick={() => setCreateFolderModal(false)} className="px-3 py-1.5 text-xs text-slate-400">
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-800 mt-6">
+                <button type="button" onClick={() => setCreateFolderModal(false)} className="px-4 py-2 text-xs text-slate-400 hover:text-white">
                   Cancel
                 </button>
-                <button type="submit" className="px-4 py-1.5 bg-blue-600 text-xs font-semibold text-white rounded-lg">
+                <button type="submit" className="px-5 py-2 bg-[#925ce9] hover:bg-[#7e43e5] text-xs font-semibold text-white rounded-lg shadow-md shadow-[#925ce9]/30 transition-all">
                   Save Folder
                 </button>
               </div>
@@ -5654,43 +6044,51 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
         </div>
       )}
 
-      {/* ===================== MODAL: CREATE CUSTOM LABEL ===================== */}
+      {/* ===================== DRAWER: CREATE CUSTOM LABEL ===================== */}
       {createLabelModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-5 shadow-2xl">
-            <h3 className="text-sm font-bold text-white mb-3">Create Custom Label</h3>
-            <form onSubmit={handleCreateLabel} className="space-y-3">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-end">
+          <div className="bg-slate-900 border-l border-slate-800 w-full max-w-md h-full shadow-2xl flex flex-col p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Tag className="w-5 h-5 text-emerald-400" />
+                <span>Create Custom Tag / Label</span>
+              </h3>
+              <button onClick={() => setCreateLabelModal(false)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateLabel} className="space-y-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Label Name</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Tag Name *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Urgent or VIP Client"
+                  placeholder="e.g. Urgent, High Priority, Client"
                   value={newLabelName}
                   onChange={(e) => setNewLabelName(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 px-3 py-2 text-xs text-white rounded-lg"
+                  className="w-full bg-slate-800 border border-slate-700 px-3 py-2 text-xs text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-[#925ce9]"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Label Color</label>
-                <div className="flex gap-2">
-                  {['#10b981', '#ef4444', '#f59e0b', '#3b82f6', '#a855f7'].map((c) => (
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Tag Color</label>
+                <div className="flex gap-2.5">
+                  {['#10b981', '#925ce9', '#ef4444', '#f59e0b', '#3b82f6'].map((c) => (
                     <button
                       key={c}
                       type="button"
                       onClick={() => setNewLabelColor(c)}
-                      className={`w-6 h-6 rounded-full border-2 ${newLabelColor === c ? 'border-white scale-110' : 'border-transparent'}`}
+                      className={`w-7 h-7 rounded-full border-2 transition-transform ${newLabelColor === c ? 'border-white scale-110 shadow-lg' : 'border-transparent'}`}
                       style={{ backgroundColor: c }}
                     />
                   ))}
                 </div>
               </div>
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
-                <button type="button" onClick={() => setCreateLabelModal(false)} className="px-3 py-1.5 text-xs text-slate-400">
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-800 mt-6">
+                <button type="button" onClick={() => setCreateLabelModal(false)} className="px-4 py-2 text-xs text-slate-400 hover:text-white">
                   Cancel
                 </button>
-                <button type="submit" className="px-4 py-1.5 bg-emerald-600 text-xs font-semibold text-white rounded-lg">
-                  Save Label
+                <button type="submit" className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white rounded-lg shadow-md transition-all">
+                  Save Tag
                 </button>
               </div>
             </form>
@@ -5698,16 +6096,22 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
         </div>
       )}
 
-      {/* ===================== MODAL: SUPER ADMIN PLAN CREATOR ===================== */}
+      {/* ===================== DRAWER: SUPER ADMIN PLAN CREATOR ===================== */}
       {planModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
-            <h3 className="text-base font-bold text-white mb-4">
-              {planFormData.id ? 'Edit Package' : 'Create New Subscription Package'}
-            </h3>
-            <form onSubmit={handleSavePlan} className="space-y-3">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-end">
+          <div className="bg-slate-900 border-l border-slate-800 w-full max-w-lg h-full shadow-2xl flex flex-col p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Receipt className="w-5 h-5 text-[#925ce9]" />
+                <span>{planFormData.id ? 'Edit SaaS Package' : 'Create New Subscription Package'}</span>
+              </h3>
+              <button onClick={() => setPlanModal(false)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSavePlan} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Package Name</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Package Name *</label>
                 <input
                   type="text"
                   required
@@ -5719,7 +6123,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Monthly Price ($)</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Monthly Price ($)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -5730,7 +6134,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Max Domains</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Max Domains</label>
                   <input
                     type="number"
                     required
@@ -5742,7 +6146,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Max Mailbox Users</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Max Mailbox Users</label>
                   <input
                     type="number"
                     required
@@ -5752,7 +6156,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Storage (MB)</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Storage (MB)</label>
                   <input
                     type="number"
                     required
@@ -5763,11 +6167,11 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4 border-t border-slate-800">
-                <button type="button" onClick={() => setPlanModal(false)} className="px-4 py-2 text-xs text-slate-400">
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-800 mt-6">
+                <button type="button" onClick={() => setPlanModal(false)} className="px-4 py-2 text-xs text-slate-400 hover:text-white">
                   Cancel
                 </button>
-                <button type="submit" className="px-5 py-2 bg-purple-600 text-xs font-bold text-white rounded-lg shadow-lg">
+                <button type="submit" className="px-5 py-2 bg-[#925ce9] hover:bg-[#7e43e5] text-xs font-bold text-white rounded-lg shadow-lg">
                   Save Package
                 </button>
               </div>
@@ -5776,18 +6180,26 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
         </div>
       )}
 
-      {/* ===================== MODAL: CREATE MAILBOX ===================== */}
+      {/* ===================== DRAWER: CREATE MAILBOX ===================== */}
       {newMailboxModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-6">
-            <h3 className="text-base font-bold text-white mb-4">Create New Professional Mailbox</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-end">
+          <div className="bg-slate-900 border-l border-slate-800 w-full max-w-lg h-full shadow-2xl flex flex-col p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Mail className="w-5 h-5 text-[#925ce9]" />
+                <span>Create Professional Mailbox</span>
+              </h3>
+              <button onClick={() => setNewMailboxModal(false)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             <form onSubmit={handleCreateMailbox} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1.5">Select Domain</label>
                 <select
                   value={newMailboxData.domainId}
                   onChange={(e) => setNewMailboxData({ ...newMailboxData, domainId: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#925ce9]"
                 >
                   {domains.map((d) => (
                     <option key={d.id} value={d.id}>
@@ -5806,9 +6218,9 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     placeholder="foysal or support"
                     value={newMailboxData.username}
                     onChange={(e) => setNewMailboxData({ ...newMailboxData, username: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-l-lg px-3 py-2 text-xs text-white"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-l-lg px-3 py-2 text-xs text-white focus:outline-none"
                   />
-                  <span className="bg-slate-800/80 border border-l-0 border-slate-700 px-3 py-2 text-xs text-slate-400 rounded-r-lg">
+                  <span className="bg-slate-800/80 border border-l-0 border-slate-700 px-3 py-2 text-xs text-slate-400 rounded-r-lg font-mono">
                     @{domains.find((d) => d.id.toString() === newMailboxData.domainId)?.name || 'domain.com'}
                   </span>
                 </div>
@@ -5821,7 +6233,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   placeholder="e.g. Foysal Ahmed"
                   value={newMailboxData.fullName}
                   onChange={(e) => setNewMailboxData({ ...newMailboxData, fullName: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none"
                 />
               </div>
 
@@ -5833,12 +6245,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   placeholder="Password for Webmail & IMAP/SMTP"
                   value={newMailboxData.password}
                   onChange={(e) => setNewMailboxData({ ...newMailboxData, password: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none"
                 />
               </div>
 
-              {/* STORAGE QUOTA ALLOCATION (DYNAMICALLY CAPPED TO COMPANY PLAN LIMIT) */}
-              {/* ROLE SELECTION */}
               <div>
                 <label className="block text-xs font-semibold text-purple-300 mb-1.5">
                   🛡️ Assign User Role & Permissions
@@ -5846,7 +6256,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 <select
                   value={newMailboxData.roleId || ''}
                   onChange={(e) => setNewMailboxData({ ...newMailboxData, roleId: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none"
                 >
                   <option value="">Standard User (Default permissions)</option>
                   {companyRoles.map((r) => (
@@ -5857,7 +6267,6 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 </select>
               </div>
 
-              {/* STORAGE QUOTA ALLOCATION (TYPABLE INPUT + DYNAMIC PRESETS) */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-semibold text-amber-300">
@@ -5880,7 +6289,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                         const maxCap = currentUser?.storage_quota_mb || 10240;
                         setNewMailboxData({ ...newMailboxData, quotaMb: Math.min(val, maxCap) });
                       }}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-amber-500"
                       placeholder="Type MB (e.g. 2048)"
                     />
                     <span className="absolute right-2.5 top-2 text-[11px] text-slate-400 font-bold">MB</span>
@@ -5892,7 +6301,6 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   </div>
                 </div>
 
-                {/* Quick Preset Buttons */}
                 <div className="flex flex-wrap gap-1">
                   {[512, 1024, 2048, 5120, 10240]
                     .filter((mb) => mb <= (currentUser?.storage_quota_mb || 10240))
@@ -5913,28 +6321,27 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 </div>
               </div>
 
-              {/* INDIVIDUAL USER SIGNATURE (TEXT OR HTML) */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-semibold text-indigo-300">
-                    ✍️ User Individual Signature (Supports HTML / Plaintext)
+                    ✍️ User Individual Signature (Supports HTML)
                   </label>
-                  <span className="text-[10px] text-emerald-400 font-mono">HTML Enabled &lt;div&gt;, &lt;b&gt;, &lt;img&gt;</span>
+                  <span className="text-[10px] text-emerald-400 font-mono">HTML Enabled</span>
                 </div>
                 <textarea
                   rows={3}
-                  placeholder="<div style='font-family: Arial;'><b>Best regards,</b><br/>Foysal Ahmed<br/><span style='color: #2563eb;'>Senior Developer</span></div>"
+                  placeholder="<div style='font-family: Arial;'><b>Best regards,</b><br/>Foysal Ahmed</div>"
                   value={newMailboxData.signature}
                   onChange={(e) => setNewMailboxData({ ...newMailboxData, signature: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-500 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-500 font-mono focus:outline-none focus:ring-1 focus:ring-[#925ce9]"
                 />
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-800">
-                <button type="button" onClick={() => setNewMailboxModal(false)} className="px-4 py-2 text-xs font-medium text-slate-400">
+                <button type="button" onClick={() => setNewMailboxModal(false)} className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white">
                   Cancel
                 </button>
-                <button type="submit" className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white rounded-lg">
+                <button type="submit" className="px-5 py-2 bg-[#925ce9] hover:bg-[#7e43e5] text-xs font-semibold text-white rounded-lg shadow-md shadow-[#925ce9]/30 transition-all">
                   Create Mailbox
                 </button>
               </div>
@@ -5943,13 +6350,18 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
         </div>
       )}
 
-      {/* ===================== MODAL: EDIT MAILBOX (QUOTA & SIGNATURE & ROLE) ===================== */}
+      {/* ===================== DRAWER: EDIT MAILBOX ===================== */}
       {editMailboxModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-6">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-              <h3 className="text-base font-bold text-white">Edit Mailbox Settings & Signature</h3>
-              <button onClick={() => setEditMailboxModal(null)} className="text-slate-400 hover:text-white text-sm">✕</button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-end">
+          <div className="bg-slate-900 border-l border-slate-800 w-full max-w-lg h-full shadow-2xl flex flex-col p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Settings2 className="w-5 h-5 text-[#925ce9]" />
+                <span>Edit Mailbox & Storage Quota</span>
+              </h3>
+              <button onClick={() => setEditMailboxModal(null)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+                <X className="w-5 h-5" />
+              </button>
             </div>
             <form onSubmit={handleUpdateMailbox} className="space-y-4">
               <div>
@@ -5968,11 +6380,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   type="text"
                   value={editMailboxForm.fullName}
                   onChange={(e) => setEditMailboxForm({ ...editMailboxForm, fullName: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none"
                 />
               </div>
 
-              {/* ROLE SELECTION */}
               <div>
                 <label className="block text-xs font-semibold text-purple-300 mb-1">
                   🛡️ User Role & Permissions
@@ -5980,7 +6391,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 <select
                   value={editMailboxForm.roleId || ''}
                   onChange={(e) => setEditMailboxForm({ ...editMailboxForm, roleId: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none"
                 >
                   <option value="">Standard User (Default permissions)</option>
                   {companyRoles.map((r) => (
@@ -5991,7 +6402,6 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 </select>
               </div>
 
-              {/* STORAGE QUOTA ALLOCATION (TYPABLE INPUT + DYNAMIC PRESETS) */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-semibold text-amber-300">
@@ -6014,7 +6424,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                         const maxCap = currentUser?.storage_quota_mb || 10240;
                         setEditMailboxForm({ ...editMailboxForm, quotaMb: Math.min(val, maxCap) });
                       }}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-amber-500"
                     />
                     <span className="absolute right-2.5 top-2 text-[11px] text-slate-400 font-bold">MB</span>
                   </div>
@@ -6025,7 +6435,6 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   </div>
                 </div>
 
-                {/* Quick Preset Buttons */}
                 <div className="flex flex-wrap gap-1">
                   {[512, 1024, 2048, 5120, 10240]
                     .filter((mb) => mb <= (currentUser?.storage_quota_mb || 10240))
@@ -6046,20 +6455,19 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 </div>
               </div>
 
-              {/* INDIVIDUAL USER SIGNATURE (TEXT OR HTML) */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-semibold text-indigo-300">
-                    ✍️ Individual Email Signature (Supports HTML / Plaintext)
+                    ✍️ Individual Email Signature (Supports HTML)
                   </label>
-                  <span className="text-[10px] text-emerald-400 font-mono">HTML Enabled &lt;div&gt;, &lt;b&gt;, &lt;img&gt;</span>
+                  <span className="text-[10px] text-emerald-400 font-mono">HTML Enabled</span>
                 </div>
                 <textarea
                   rows={3}
-                  placeholder="<div style='font-family: Arial;'><b>Best regards,</b><br/>Name | Title<br/>Direct: +880 1700-000000</div>"
+                  placeholder="<div style='font-family: Arial;'><b>Best regards,</b><br/>Name | Title</div>"
                   value={editMailboxForm.signature}
                   onChange={(e) => setEditMailboxForm({ ...editMailboxForm, signature: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-500 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-500 font-mono focus:outline-none focus:ring-1 focus:ring-[#925ce9]"
                 />
               </div>
 
@@ -6070,15 +6478,15 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   placeholder="Set new mailbox password"
                   value={editMailboxForm.password}
                   onChange={(e) => setEditMailboxForm({ ...editMailboxForm, password: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none"
                 />
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-800">
-                <button type="button" onClick={() => setEditMailboxModal(null)} className="px-4 py-2 text-xs font-medium text-slate-400">
+                <button type="button" onClick={() => setEditMailboxModal(null)} className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white">
                   Cancel
                 </button>
-                <button type="submit" className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white rounded-lg">
+                <button type="submit" className="px-5 py-2 bg-[#925ce9] hover:bg-[#7e43e5] text-xs font-semibold text-white rounded-lg shadow-md shadow-[#925ce9]/30 transition-all">
                   Save Changes
                 </button>
               </div>
@@ -6087,38 +6495,40 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
         </div>
       )}
 
-      {/* ===================== MODAL: EDIT CUSTOM DOMAIN ===================== */}
+      {/* ===================== DRAWER: EDIT CUSTOM DOMAIN ===================== */}
       {editDomainModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-6">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-              <div className="flex items-center gap-2">
-                <Globe className="w-5 h-5 text-blue-400" />
-                <h3 className="text-base font-bold text-white">Edit Custom Domain</h3>
-              </div>
-              <button onClick={() => setEditDomainModal(null)} className="text-slate-400 hover:text-white text-sm">✕</button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-end">
+          <div className="bg-slate-900 border-l border-slate-800 w-full max-w-md h-full shadow-2xl flex flex-col p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Globe className="w-5 h-5 text-[#925ce9]" />
+                <span>Edit Custom Domain</span>
+              </h3>
+              <button onClick={() => setEditDomainModal(null)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+                <X className="w-5 h-5" />
+              </button>
             </div>
             <form onSubmit={handleUpdateDomain} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Domain Name *</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Domain Name *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. branddomain.com"
                   value={editDomainName}
                   onChange={(e) => setEditDomainName(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#925ce9] font-mono"
                 />
                 <p className="text-[10px] text-slate-400 mt-1">
                   Editing domain name will update DNS records generation and DKIM signatures for this tenant domain.
                 </p>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-800 mt-6">
                 <button type="button" onClick={() => setEditDomainModal(null)} className="px-4 py-2 text-xs text-slate-400 hover:text-white">
                   Cancel
                 </button>
-                <button type="submit" className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white rounded-lg shadow-lg">
+                <button type="submit" className="px-5 py-2 bg-[#925ce9] hover:bg-[#7e43e5] text-xs font-semibold text-white rounded-lg shadow-md shadow-[#925ce9]/30 transition-all">
                   Update Domain
                 </button>
               </div>
@@ -6127,20 +6537,21 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
         </div>
       )}
 
-      {/* ===================== MODAL: ADVANCED BULK CAMPAIGN WITH GROUPS & TAGS ===================== */}
+      {/* ===================== DRAWER: ADVANCED BULK CAMPAIGN ===================== */}
       {bulkModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl shadow-2xl p-6 overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex justify-end">
+          <div className="bg-slate-900 border-l border-slate-800 w-full max-w-2xl h-full shadow-2xl flex flex-col p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
               <div className="flex items-center gap-2">
-                <Send className="w-5 h-5 text-blue-400" />
+                <Send className="w-5 h-5 text-[#925ce9]" />
                 <h3 className="text-base font-bold text-white">Compose Bulk Email Campaign</h3>
               </div>
-              <button onClick={() => setBulkModal(false)} className="text-slate-400 hover:text-white text-sm">✕</button>
+              <button onClick={() => setBulkModal(false)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <form onSubmit={handleLaunchCampaign} className="space-y-3.5 flex-1 overflow-y-auto">
-              {/* Select Target Group */}
+            <form onSubmit={handleLaunchCampaign} className="space-y-4 flex-1">
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">
                   Target Contact Group <span className="text-rose-400">*</span>
@@ -6149,7 +6560,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   <select
                     value={bulkData.listId}
                     onChange={(e) => setBulkData({ ...bulkData, listId: e.target.value })}
-                    className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                    className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none"
                   >
                     {contactLists.map((l) => (
                       <option key={l.id} value={l.id}>
@@ -6175,7 +6586,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   placeholder="e.g. March 2026 Promotional Newsletter"
                   value={bulkData.title}
                   onChange={(e) => setBulkData({ ...bulkData, title: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none"
                 />
               </div>
 
@@ -6187,11 +6598,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   placeholder="Hi {{ name }}, we have special updates for {{ company }}!"
                   value={bulkData.subject}
                   onChange={(e) => setBulkData({ ...bulkData, subject: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-medium"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-medium focus:outline-none"
                 />
               </div>
 
-              {/* DYNAMIC TAG INSERTION TOOLBAR (Exactly matching requested UI) */}
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">HTML Email Template</label>
                 <div className="bg-slate-950 p-2.5 rounded-t-lg border border-slate-800 border-b-0">
@@ -6200,7 +6610,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     <button
                       type="button"
                       onClick={() => setBulkData({ ...bulkData, bodyHtml: bulkData.bodyHtml + ' {{ name }} ' })}
-                      className="px-2 py-0.5 rounded-md bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 font-mono text-[10px] font-bold border border-blue-500/30 transition-colors"
+                      className="px-2 py-0.5 rounded-md bg-[#925ce9]/10 hover:bg-[#925ce9]/20 text-[#925ce9] font-mono text-[10px] font-bold border border-[#925ce9]/30 transition-colors"
                     >
                       + {"{{name}}"}
                     </button>
@@ -6234,13 +6644,13 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   placeholder="<p>Dear {{ name }},</p><p>We are delighted to partner with {{ company }}...</p>"
                   value={bulkData.bodyHtml}
                   onChange={(e) => setBulkData({ ...bulkData, bodyHtml: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-b-lg p-3 text-xs text-white font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-b-lg p-3 text-xs text-white font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-[#925ce9]"
                 />
               </div>
 
-              <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-between pt-4 border-t border-slate-800">
                 <span className="text-[11px] text-slate-400">
-                  Each recipient in the group will receive a customized email via throttled Queue.
+                  Throttled queue dispatching.
                 </span>
                 <div className="flex gap-2">
                   <button type="button" onClick={() => setBulkModal(false)} className="px-4 py-2 text-xs text-slate-400 hover:text-white">
@@ -6248,7 +6658,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-xs font-bold text-white rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center gap-2"
+                    className="px-6 py-2 bg-[#925ce9] hover:bg-[#7e43e5] text-xs font-bold text-white rounded-xl shadow-lg shadow-[#925ce9]/30 transition-all flex items-center gap-2"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Dispatch Queue Campaign</span>
@@ -6260,45 +6670,52 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
         </div>
       )}
 
-      {/* ===================== MODAL: CREATE CONTACT GROUP (BULK RECIPIENTS) ===================== */}
+      {/* ===================== DRAWER: CREATE CONTACT GROUP ===================== */}
       {createGroupModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-6">
-            <h3 className="text-base font-bold text-white mb-2">Create New Contact Group</h3>
-            <p className="text-xs text-slate-400 mb-4">Add a group name and paste contact emails for bulk sending.</p>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex justify-end">
+          <div className="bg-slate-900 border-l border-slate-800 w-full max-w-md h-full shadow-2xl flex flex-col p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Users className="w-5 h-5 text-[#925ce9]" />
+                <span>Create Contact Group</span>
+              </h3>
+              <button onClick={() => setCreateGroupModal(false)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-            <form onSubmit={handleCreateGroup} className="space-y-3.5">
+            <form onSubmit={handleCreateGroup} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Group Name</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Group Name *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. VIP Clients (20 Members)"
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#925ce9]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
                   Contacts List (1 per line, format: <code>email, name, company</code>)
                 </label>
                 <textarea
                   required
-                  rows={6}
+                  rows={8}
                   placeholder={`client1@example.com, John Doe, Acme Corp\nclient2@example.com, Sarah Smith, Tech Innovators\nclient3@example.com, Michael, Global Solutions`}
                   value={newGroupCsv}
                   onChange={(e) => setNewGroupCsv(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-xs text-white font-mono placeholder-slate-500 leading-relaxed"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-xs text-white font-mono placeholder-slate-500 leading-relaxed focus:outline-none focus:ring-1 focus:ring-[#925ce9]"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
-                <button type="button" onClick={() => setCreateGroupModal(false)} className="px-4 py-2 text-xs text-slate-400">
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-800">
+                <button type="button" onClick={() => setCreateGroupModal(false)} className="px-4 py-2 text-xs text-slate-400 hover:text-white">
                   Cancel
                 </button>
-                <button type="submit" className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white rounded-lg">
+                <button type="submit" className="px-5 py-2 bg-[#925ce9] hover:bg-[#7e43e5] text-xs font-semibold text-white rounded-lg shadow-md transition-all">
                   Save Group
                 </button>
               </div>
@@ -6307,274 +6724,33 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
         </div>
       )}
 
-      {/* ===================== MODAL: CREATE SUB-USER WITH ROLE PERMISSIONS ===================== */}
-      {subUserModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl p-6 overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-              <div>
-                <h3 className="text-base font-bold text-white">Create Sub-User Account</h3>
-                <p className="text-xs text-slate-400">Configure credentials and grant specific operational permissions.</p>
-              </div>
-              <button onClick={() => setSubUserModal(false)} className="text-slate-400 hover:text-white text-sm">✕</button>
-            </div>
-
-            <form onSubmit={handleCreateSubUser} className="space-y-4 flex-1 overflow-y-auto">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Sub-User Name</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Staff Operator"
-                    value={subUserForm.name}
-                    onChange={(e) => setSubUserForm({ ...subUserForm, name: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Login Email</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="staff@domain.com"
-                    value={subUserForm.email}
-                    onChange={(e) => setSubUserForm({ ...subUserForm, email: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Account Password</label>
-                <input
-                  type="password"
-                  required
-                  placeholder="Set account password"
-                  value={subUserForm.password}
-                  onChange={(e) => setSubUserForm({ ...subUserForm, password: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
-                />
-              </div>
-
-              {/* RBAC Granular Permissions Checkboxes */}
-              <div className="pt-2">
-                <h4 className="text-xs font-bold text-white mb-2 uppercase tracking-wider text-slate-300">
-                  Granular Role & Permissions Access
-                </h4>
-                <div className="space-y-2.5 bg-slate-950 p-3.5 rounded-xl border border-slate-800">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={subUserForm.permissions.canSendBulk}
-                      onChange={(e) =>
-                        setSubUserForm({
-                          ...subUserForm,
-                          permissions: { ...subUserForm.permissions, canSendBulk: e.target.checked },
-                        })
-                      }
-                      className="w-4 h-4 rounded text-blue-600 bg-slate-800 border-slate-700 focus:ring-blue-500"
-                    />
-                    <div>
-                      <span className="text-xs font-medium text-white block">Bulk Email Campaigns</span>
-                      <span className="text-[10px] text-slate-400 block">Can compose and dispatch bulk campaign queues</span>
-                    </div>
-                  </label>
-
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={subUserForm.permissions.canDeleteMail}
-                      onChange={(e) =>
-                        setSubUserForm({
-                          ...subUserForm,
-                          permissions: { ...subUserForm.permissions, canDeleteMail: e.target.checked },
-                        })
-                      }
-                      className="w-4 h-4 rounded text-blue-600 bg-slate-800 border-slate-700 focus:ring-blue-500"
-                    />
-                    <div>
-                      <span className="text-xs font-medium text-white block">Delete Emails & Trash</span>
-                      <span className="text-[10px] text-slate-400 block">Can move emails to trash and permanently delete</span>
-                    </div>
-                  </label>
-
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={subUserForm.permissions.canManageFolders}
-                      onChange={(e) =>
-                        setSubUserForm({
-                          ...subUserForm,
-                          permissions: { ...subUserForm.permissions, canManageFolders: e.target.checked },
-                        })
-                      }
-                      className="w-4 h-4 rounded text-blue-600 bg-slate-800 border-slate-700 focus:ring-blue-500"
-                    />
-                    <div>
-                      <span className="text-xs font-medium text-white block">Create & Manage Folders</span>
-                      <span className="text-[10px] text-slate-400 block">Can create, rename, and delete custom mailbox folders</span>
-                    </div>
-                  </label>
-
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={subUserForm.permissions.canManageTags}
-                      onChange={(e) =>
-                        setSubUserForm({
-                          ...subUserForm,
-                          permissions: { ...subUserForm.permissions, canManageTags: e.target.checked },
-                        })
-                      }
-                      className="w-4 h-4 rounded text-blue-600 bg-slate-800 border-slate-700 focus:ring-blue-500"
-                    />
-                    <div>
-                      <span className="text-xs font-medium text-white block">Create & Manage Tags/Labels</span>
-                      <span className="text-[10px] text-slate-400 block">Can create, color-code, and assign custom labels</span>
-                    </div>
-                  </label>
-
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={subUserForm.permissions.canManageDomains}
-                      onChange={(e) =>
-                        setSubUserForm({
-                          ...subUserForm,
-                          permissions: { ...subUserForm.permissions, canManageDomains: e.target.checked },
-                        })
-                      }
-                      className="w-4 h-4 rounded text-blue-600 bg-slate-800 border-slate-700 focus:ring-blue-500"
-                    />
-                    <div>
-                      <span className="text-xs font-medium text-white block">Custom Domains Management</span>
-                      <span className="text-[10px] text-slate-400 block">Can add new domains and verify DNS records</span>
-                    </div>
-                  </label>
-
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={subUserForm.permissions.canManageMailboxes}
-                      onChange={(e) =>
-                        setSubUserForm({
-                          ...subUserForm,
-                          permissions: { ...subUserForm.permissions, canManageMailboxes: e.target.checked },
-                        })
-                      }
-                      className="w-4 h-4 rounded text-blue-600 bg-slate-800 border-slate-700 focus:ring-blue-500"
-                    />
-                    <div>
-                      <span className="text-xs font-medium text-white block">Mailbox Accounts (Add / Delete)</span>
-                      <span className="text-[10px] text-slate-400 block">Can create new professional mailboxes and delete them</span>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
-                <button type="button" onClick={() => setSubUserModal(false)} className="px-4 py-2 text-xs text-slate-400">
-                  Cancel
-                </button>
-                <button type="submit" className="px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-xs font-semibold text-white rounded-lg shadow-lg">
-                  Save Sub-User
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ===================== MODAL: GENERATE API KEY ===================== */}
-      {newKeyModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-6">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-              <div className="flex items-center gap-2">
-                <KeyRound className="w-5 h-5 text-emerald-400" />
-                <h3 className="text-base font-bold text-white">Generate Developer API Key</h3>
-              </div>
-              <button onClick={() => setNewKeyModal(false)} className="text-slate-400 hover:text-white text-sm">✕</button>
-            </div>
-
-            <form onSubmit={handleCreateApiKey} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Key Name / App Identifier</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. My Website / WooCommerce / Next.js App"
-                  value={newKeyName}
-                  onChange={(e) => setNewKeyName(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 px-3 py-2 text-xs text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Sender Mailbox (Optional)</label>
-                <select
-                  value={newKeySender}
-                  onChange={(e) => setNewKeySender(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 px-3 py-2 text-xs text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="">Any verified mailbox in my account</option>
-                  {mailboxes.map((mb) => (
-                    <option key={mb.id} value={mb.email}>
-                      {mb.email} ({mb.full_name || 'Mailbox'})
-                    </option>
-                  ))}
-                </select>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  If selected, this API key will send strictly through this specific mailbox address.
-                </p>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setNewKeyModal(false)}
-                  className="px-4 py-2 text-xs text-slate-400 hover:text-white"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-xs font-bold text-white rounded-xl shadow-lg shadow-emerald-600/30"
-                >
-                  Generate Key
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ===================== MODAL: CREATE / EDIT EMAIL TEMPLATE ===================== */}
+      {/* ===================== DRAWER: EMAIL TEMPLATE BUILDER ===================== */}
       {templateModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl shadow-2xl p-6 flex flex-col max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex justify-end">
+          <div className="bg-slate-900 border-l border-slate-800 w-full max-w-2xl h-full shadow-2xl flex flex-col p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
               <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-indigo-400" />
+                <FileText className="w-5 h-5 text-[#925ce9]" />
                 <h3 className="text-base font-bold text-white">
-                  {templateFormData.id ? 'Edit Email Template' : 'Create Email Template'}
+                  {templateFormData.id ? 'Edit Email Template' : 'Create New Email Template'}
                 </h3>
               </div>
-              <button onClick={() => setTemplateModal(false)} className="text-slate-400 hover:text-white text-sm">✕</button>
+              <button onClick={() => setTemplateModal(false)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <form onSubmit={handleSaveTemplate} className="space-y-4 flex-1 overflow-y-auto pr-1">
+            <form onSubmit={handleSaveTemplate} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Template Name</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Template Name *</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Welcome Onboarding or Monthly Invoice"
+                    placeholder="e.g. Welcome Onboarding"
                     value={templateFormData.name}
                     onChange={(e) => setTemplateFormData({ ...templateFormData, name: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 px-3 py-2 text-xs text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full bg-slate-800 border border-slate-700 px-3 py-2 text-xs text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-[#925ce9]"
                   />
                 </div>
                 <div>
@@ -6582,7 +6758,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   <select
                     value={templateFormData.category}
                     onChange={(e) => setTemplateFormData({ ...templateFormData, category: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 px-3 py-2 text-xs text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full bg-slate-800 border border-slate-700 px-3 py-2 text-xs text-white rounded-lg focus:outline-none"
                   >
                     <option value="General">General</option>
                     <option value="Onboarding">Onboarding</option>
@@ -6601,21 +6777,19 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   placeholder="e.g. Welcome {{name}} to {{company}}!"
                   value={templateFormData.subject}
                   onChange={(e) => setTemplateFormData({ ...templateFormData, subject: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 px-3 py-2 text-xs text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-slate-800 border border-slate-700 px-3 py-2 text-xs text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-[#925ce9]"
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-xs font-semibold text-slate-300">Template Design & Content</label>
-
-                  {/* Editor Mode Switcher (Visual Editor vs Live Preview vs HTML Source) */}
                   <div className="flex items-center bg-slate-800 p-0.5 rounded-lg border border-slate-700 text-[11px]">
                     <button
                       type="button"
                       onClick={() => setTemplateEditorView('editor')}
                       className={`px-2.5 py-1 rounded-md transition-colors flex items-center gap-1.5 ${
-                        templateEditorView === 'editor' ? 'bg-indigo-600 text-white font-medium shadow' : 'text-slate-400 hover:text-white'
+                        templateEditorView === 'editor' ? 'bg-[#925ce9] text-white font-medium shadow' : 'text-slate-400 hover:text-white'
                       }`}
                     >
                       <FileText className="w-3 h-3" />
@@ -6625,17 +6799,17 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                       type="button"
                       onClick={() => setTemplateEditorView('preview')}
                       className={`px-2.5 py-1 rounded-md transition-colors flex items-center gap-1.5 ${
-                        templateEditorView === 'preview' ? 'bg-indigo-600 text-white font-medium shadow' : 'text-slate-400 hover:text-white'
+                        templateEditorView === 'preview' ? 'bg-[#925ce9] text-white font-medium shadow' : 'text-slate-400 hover:text-white'
                       }`}
                     >
                       <Eye className="w-3 h-3" />
-                      <span>Live Preview</span>
+                      <span>Preview</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setTemplateEditorView('code')}
                       className={`px-2.5 py-1 rounded-md transition-colors flex items-center gap-1.5 ${
-                        templateEditorView === 'code' ? 'bg-indigo-600 text-white font-medium shadow' : 'text-slate-400 hover:text-white'
+                        templateEditorView === 'code' ? 'bg-[#925ce9] text-white font-medium shadow' : 'text-slate-400 hover:text-white'
                       }`}
                     >
                       <Code className="w-3 h-3" />
@@ -6644,7 +6818,6 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   </div>
                 </div>
 
-                {/* Dynamic Tag Inserter Pills */}
                 <div className="flex items-center gap-1.5 flex-wrap mb-2 p-2 bg-slate-950/60 rounded-lg border border-slate-800">
                   <span className="text-[11px] text-slate-400 font-medium">Merge Tags:</span>
                   {['{{name}}', '{{company}}', '{{email}}', '{{unsubscribeUrl}}'].map((tag) => (
@@ -6659,14 +6832,13 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                         }));
                         toast.success(`Inserted ${tag}`);
                       }}
-                      className="px-2 py-0.5 rounded bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 font-mono text-[11px] border border-indigo-500/30 transition-colors"
+                      className="px-2 py-0.5 rounded bg-[#925ce9]/10 hover:bg-[#925ce9]/20 text-[#925ce9] font-mono text-[11px] border border-[#925ce9]/30 transition-colors"
                     >
                       + {tag}
                     </button>
                   ))}
                 </div>
 
-                {/* Editor Content Area */}
                 {templateEditorView === 'editor' && (
                   <div className="flex flex-col min-h-[260px]">
                     <RichEditor
@@ -6678,28 +6850,23 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   </div>
                 )}
 
-                {/* Live Preview Mode (Rendered as Real Email Client) */}
                 {templateEditorView === 'preview' && (
                   <div className="border border-slate-700 rounded-xl overflow-hidden bg-white text-slate-900 shadow-inner">
                     <div className="bg-slate-100 border-b border-slate-200 px-4 py-2 flex items-center justify-between text-xs text-slate-600">
                       <span><strong>Subject Preview:</strong> {templateFormData.subject || '(No Subject)'}</span>
-                      <span className="text-[10px] text-slate-400 uppercase">Desktop Email Client View</span>
+                      <span className="text-[10px] text-slate-400 uppercase">Desktop View</span>
                     </div>
                     <div
                       className="p-6 max-h-80 overflow-y-auto font-sans leading-relaxed prose prose-sm max-w-none"
                       dangerouslySetInnerHTML={{
-                        __html: templateFormData.bodyHtml || '<p style="color: #94a3b8; font-style: italic;">No email content to preview yet. Switch to Visual Editor to write your email.</p>',
+                        __html: templateFormData.bodyHtml || '<p style="color: #94a3b8; font-style: italic;">No email content to preview yet.</p>',
                       }}
                     />
                   </div>
                 )}
 
-                {/* HTML Source Code Mode */}
                 {templateEditorView === 'code' && (
                   <div className="border border-slate-700 rounded-xl overflow-hidden bg-slate-950">
-                    <div className="bg-slate-800/80 border-b border-slate-700 px-4 py-1.5 text-xs text-slate-400 font-mono">
-                      Raw HTML Template Source
-                    </div>
                     <textarea
                       rows={10}
                       required
@@ -6721,7 +6888,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-xs font-bold text-white rounded-xl shadow-lg shadow-indigo-600/30"
+                  className="px-5 py-2 bg-[#925ce9] hover:bg-[#7e43e5] text-xs font-bold text-white rounded-xl shadow-lg shadow-[#925ce9]/30 transition-all"
                 >
                   {templateFormData.id ? 'Update Template' : 'Save Template'}
                 </button>
@@ -6731,16 +6898,18 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
         </div>
       )}
 
-      {/* ===================== MODAL: UPGRADE PACKAGE & GENERATE INVOICE ===================== */}
+      {/* ===================== DRAWER: UPGRADE PACKAGE & GENERATE INVOICE ===================== */}
       {upgradeModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl p-6">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex justify-end">
+          <div className="bg-slate-900 border-l border-slate-800 w-full max-w-lg h-full shadow-2xl flex flex-col p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
               <div className="flex items-center gap-2">
                 <ArrowUpCircle className="w-5 h-5 text-amber-400" />
                 <h3 className="text-base font-bold text-white">Upgrade Subscription Plan</h3>
               </div>
-              <button onClick={() => setUpgradeModal(false)} className="text-slate-400 hover:text-white text-sm">✕</button>
+              <button onClick={() => setUpgradeModal(false)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             <form onSubmit={handleRequestUpgrade} className="space-y-4">
@@ -6756,7 +6925,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                         onClick={() => !isCurrent && setSelectedUpgradePlan(p)}
                         className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
                           isSelected
-                            ? 'bg-amber-500/10 border-amber-500 text-white'
+                            ? 'bg-[#925ce9]/15 border-[#925ce9] text-white ring-1 ring-[#925ce9]'
                             : isCurrent
                             ? 'bg-slate-800/40 border-slate-700/60 opacity-60 cursor-not-allowed'
                             : 'bg-slate-800/60 border-slate-700 hover:border-slate-600 text-slate-300'
@@ -6806,10 +6975,6 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   onChange={(e) => setUpgradePaymentForm({ ...upgradePaymentForm, transactionId: e.target.value })}
                   className="w-full bg-slate-800 border border-slate-700 px-3 py-2 text-xs text-white rounded-lg focus:outline-none"
                 />
-                <p className="text-[11px] text-amber-400/90 mt-1.5 flex items-start gap-1">
-                  <span>ℹ️</span>
-                  <span>Notice: Upgrading will generate an unpaid pending invoice. Super Admin will verify your payment reference and approve the invoice before your new limits are activated.</span>
-                </p>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-800">
@@ -6823,7 +6988,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 <button
                   type="submit"
                   disabled={!selectedUpgradePlan || selectedUpgradePlan?.id === currentUser?.plan_id}
-                  className="px-5 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:opacity-50 text-xs font-bold text-white rounded-xl shadow-lg shadow-amber-500/20"
+                  className="px-5 py-2 bg-[#925ce9] hover:bg-[#7e43e5] disabled:opacity-50 text-xs font-bold text-white rounded-xl shadow-lg shadow-[#925ce9]/20"
                 >
                   Request Upgrade & Invoice
                 </button>
@@ -6833,24 +6998,26 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
         </div>
       )}
 
-      {/* ===================== MODAL: SUPER ADMIN DIRECT COMPANY PACKAGE UPGRADE ===================== */}
+      {/* ===================== DRAWER: SUPER ADMIN DIRECT COMPANY PACKAGE UPGRADE ===================== */}
       {companyPlanModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl p-6">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex justify-end">
+          <div className="bg-slate-900 border-l border-slate-800 w-full max-w-lg h-full shadow-2xl flex flex-col p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
               <div className="flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-blue-400" />
+                <Building2 className="w-5 h-5 text-[#925ce9]" />
                 <div>
                   <h3 className="text-base font-bold text-white">Change Company Package</h3>
                   <p className="text-xs text-slate-400">Target Tenant: <strong className="text-white">{companyPlanModal.name}</strong></p>
                 </div>
               </div>
-              <button onClick={() => setCompanyPlanModal(null)} className="text-slate-400 hover:text-white text-sm">✕</button>
+              <button onClick={() => setCompanyPlanModal(null)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             <div className="space-y-4">
               <p className="text-xs text-slate-300">
-                As Super Admin, selecting a package below will <strong>immediately update</strong> the company&apos;s active plan, domain limits, and mailbox quotas without requiring payment processing:
+                Selecting a package below will <strong>immediately update</strong> the company&apos;s active plan, domain limits, and mailbox quotas:
               </p>
 
               <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
@@ -6862,15 +7029,15 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                       onClick={() => handleAdminChangeCompanyPlan(companyPlanModal.id, p.id)}
                       className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
                         isCurrent
-                          ? 'bg-blue-600/20 border-blue-500 text-white'
-                          : 'bg-slate-800/60 border-slate-700 hover:border-blue-500 hover:bg-slate-800 text-slate-300'
+                          ? 'bg-[#925ce9]/20 border-[#925ce9] text-white'
+                          : 'bg-slate-800/60 border-slate-700 hover:border-[#925ce9] hover:bg-slate-800 text-slate-300'
                       }`}
                     >
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-sm text-white">{p.name}</span>
                           {isCurrent && (
-                            <span className="text-[10px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded font-semibold">Current Plan</span>
+                            <span className="text-[10px] bg-[#925ce9]/20 text-[#925ce9] border border-[#925ce9]/30 px-2 py-0.5 rounded font-semibold">Current Plan</span>
                           )}
                         </div>
                         <span className="text-xs text-slate-400 mt-0.5 block">
@@ -6886,7 +7053,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 })}
               </div>
 
-              <div className="flex items-center justify-end pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end pt-4 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setCompanyPlanModal(null)}
@@ -7248,22 +7415,24 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
         </div>
       )}
 
-      {/* ===================== MODAL: ROLE & PERMISSION MANAGER ===================== */}
+      {/* ===================== DRAWER: ROLE & PERMISSION MANAGER ===================== */}
       {roleModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl shadow-2xl p-6 overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex justify-end">
+          <div className="bg-slate-900 border-l border-slate-800 w-full max-w-2xl h-full shadow-2xl p-6 overflow-hidden flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-purple-400" />
+                <ShieldCheck className="w-5 h-5 text-[#925ce9]" />
                 <div>
                   <h3 className="text-base font-bold text-white">Company Roles & Permissions</h3>
                   <p className="text-xs text-slate-400">Define custom roles to assign to your mailboxes</p>
                 </div>
               </div>
-              <button onClick={() => setRoleModal(false)} className="text-slate-400 hover:text-white text-sm">✕</button>
+              <button onClick={() => setRoleModal(false)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto pr-1 flex-1">
               {/* Left Column: Create/Edit Role Form */}
               <form onSubmit={handleSaveRole} className="space-y-4 bg-slate-950/60 p-4 rounded-xl border border-slate-800">
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
@@ -7278,7 +7447,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     placeholder="e.g. Sales Agent or Support Staff"
                     value={roleForm.name}
                     onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 px-3 py-1.5 text-xs text-white rounded-lg focus:outline-none"
+                    className="w-full bg-slate-900 border border-slate-700 px-3 py-1.5 text-xs text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-[#925ce9]"
                   />
                 </div>
 
@@ -7307,7 +7476,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                           ...roleForm,
                           permissions: { ...roleForm.permissions, canSwitchMailbox: e.target.checked },
                         })}
-                        className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0 w-4 h-4"
+                        className="rounded border-slate-700 bg-slate-900 text-[#925ce9] focus:ring-0 w-4 h-4"
                       />
                       <div>
                         <span className="font-semibold block text-amber-300">Switch & View Other Mailboxes</span>
@@ -7316,7 +7485,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     </label>
                   </div>
 
-                  {/* 2. EMAIL TEMPLATES (GRANULAR: CREATE, EDIT, DELETE) */}
+                  {/* 2. EMAIL TEMPLATES */}
                   <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800 space-y-1.5">
                     <span className="text-[11px] font-bold text-indigo-300 block">📑 Email Templates Rights:</span>
                     <div className="grid grid-cols-3 gap-2">
@@ -7328,7 +7497,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                             ...roleForm,
                             permissions: { ...roleForm.permissions, canCreateTemplates: e.target.checked },
                           })}
-                          className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-0 w-3.5 h-3.5"
+                          className="rounded border-slate-700 bg-slate-900 text-[#925ce9] focus:ring-0 w-3.5 h-3.5"
                         />
                         <span className="text-[11px]">Create</span>
                       </label>
@@ -7340,7 +7509,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                             ...roleForm,
                             permissions: { ...roleForm.permissions, canEditTemplates: e.target.checked },
                           })}
-                          className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-0 w-3.5 h-3.5"
+                          className="rounded border-slate-700 bg-slate-900 text-[#925ce9] focus:ring-0 w-3.5 h-3.5"
                         />
                         <span className="text-[11px]">Edit</span>
                       </label>
@@ -7352,14 +7521,14 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                             ...roleForm,
                             permissions: { ...roleForm.permissions, canDeleteTemplates: e.target.checked },
                           })}
-                          className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-0 w-3.5 h-3.5"
+                          className="rounded border-slate-700 bg-slate-900 text-[#925ce9] focus:ring-0 w-3.5 h-3.5"
                         />
                         <span className="text-[11px]">Delete</span>
                       </label>
                     </div>
                   </div>
 
-                  {/* 3. CUSTOM DOMAINS (GRANULAR: ADD, EDIT, DELETE) */}
+                  {/* 3. CUSTOM DOMAINS */}
                   <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800 space-y-1.5">
                     <span className="text-[11px] font-bold text-blue-300 block">🌐 Custom Domains Rights:</span>
                     <div className="grid grid-cols-3 gap-2">
@@ -7402,7 +7571,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     </div>
                   </div>
 
-                  {/* 4. MAILBOXES (USERS) (GRANULAR: CREATE, EDIT, DELETE) */}
+                  {/* 4. MAILBOXES PROVISIONING */}
                   <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800 space-y-1.5">
                     <span className="text-[11px] font-bold text-emerald-300 block">👥 Mailboxes Provisioning:</span>
                     <div className="grid grid-cols-3 gap-2">
@@ -7445,7 +7614,62 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     </div>
                   </div>
 
-                  {/* 5. REST API & OTHER PERMISSIONS */}
+                  {/* 5. CUSTOM FOLDERS & TAGS */}
+                  <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800 space-y-1.5">
+                    <span className="text-[11px] font-bold text-amber-300 block">📁 Folders & Tags Rights:</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={roleForm.permissions.canCreateFolders ?? true}
+                          onChange={(e) => setRoleForm({
+                            ...roleForm,
+                            permissions: { ...roleForm.permissions, canCreateFolders: e.target.checked },
+                          })}
+                          className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 w-3.5 h-3.5"
+                        />
+                        <span className="text-[11px]">Create Folders</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={roleForm.permissions.canDeleteFolders ?? true}
+                          onChange={(e) => setRoleForm({
+                            ...roleForm,
+                            permissions: { ...roleForm.permissions, canDeleteFolders: e.target.checked },
+                          })}
+                          className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 w-3.5 h-3.5"
+                        />
+                        <span className="text-[11px]">Delete Folders</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={roleForm.permissions.canCreateTags ?? true}
+                          onChange={(e) => setRoleForm({
+                            ...roleForm,
+                            permissions: { ...roleForm.permissions, canCreateTags: e.target.checked },
+                          })}
+                          className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 w-3.5 h-3.5"
+                        />
+                        <span className="text-[11px]">Create Tags</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={roleForm.permissions.canDeleteTags ?? true}
+                          onChange={(e) => setRoleForm({
+                            ...roleForm,
+                            permissions: { ...roleForm.permissions, canDeleteTags: e.target.checked },
+                          })}
+                          className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 w-3.5 h-3.5"
+                        />
+                        <span className="text-[11px]">Delete Tags</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* 6. REST API & OTHER PERMISSIONS */}
                   <div className="space-y-2 pt-1">
                     <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
                       <input
@@ -7494,22 +7718,6 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                         <span className="text-[10px] text-slate-400 block">Move messages to trash or delete</span>
                       </div>
                     </label>
-
-                    <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={roleForm.permissions.canManageFolders}
-                        onChange={(e) => setRoleForm({
-                          ...roleForm,
-                          permissions: { ...roleForm.permissions, canManageFolders: e.target.checked },
-                        })}
-                        className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0 w-4 h-4"
-                      />
-                      <div>
-                        <span className="font-semibold block text-slate-200">Custom Folders & Labels</span>
-                        <span className="text-[10px] text-slate-400 block">Create custom webmail folders</span>
-                      </div>
-                    </label>
                   </div>
                 </div>
 
@@ -7526,6 +7734,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                           canSendBulk: false,
                           canDeleteMail: true,
                           canManageFolders: true,
+                          canCreateFolders: true,
+                          canDeleteFolders: true,
+                          canCreateTags: true,
+                          canDeleteTags: true,
                           canAddDomains: false,
                           canEditDomains: false,
                           canDeleteDomains: false,
@@ -7545,7 +7757,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   )}
                   <button
                     type="submit"
-                    className="ml-auto px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg shadow-lg"
+                    className="ml-auto px-5 py-2 bg-[#925ce9] hover:bg-[#7e43e5] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#925ce9]/30 transition-all"
                   >
                     {roleForm.id ? 'Update Role' : 'Save Role'}
                   </button>
@@ -7572,7 +7784,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-white">{r.name}</span>
-                            <span className="text-[10px] bg-purple-500/10 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/20">
+                            <span className="text-[10px] bg-[#925ce9]/10 text-[#925ce9] px-2 py-0.5 rounded-full border border-[#925ce9]/20 font-medium">
                               {r.user_count || 0} user(s)
                             </span>
                           </div>
@@ -7591,8 +7803,8 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                                 ⚡ Bulk
                               </span>
                             )}
-                            {r.permissions?.canManageTemplates && (
-                              <span className="text-[9px] bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-1.5 py-0.5 rounded">
+                            {r.permissions?.canCreateTemplates && (
+                              <span className="text-[9px] bg-[#925ce9]/10 text-[#925ce9] border border-[#925ce9]/20 px-1.5 py-0.5 rounded">
                                 📑 Templates
                               </span>
                             )}
@@ -7611,6 +7823,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                                 canSendBulk: r.permissions?.canSendBulk || false,
                                 canDeleteMail: r.permissions?.canDeleteMail ?? true,
                                 canManageFolders: r.permissions?.canManageFolders ?? true,
+                                canCreateFolders: r.permissions?.canCreateFolders ?? true,
+                                canDeleteFolders: r.permissions?.canDeleteFolders ?? true,
+                                canCreateTags: r.permissions?.canCreateTags ?? true,
+                                canDeleteTags: r.permissions?.canDeleteTags ?? true,
                                 canAddDomains: r.permissions?.canAddDomains || false,
                                 canEditDomains: r.permissions?.canEditDomains || false,
                                 canDeleteDomains: r.permissions?.canDeleteDomains || false,
@@ -7623,7 +7839,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                                 canDeleteMailboxes: r.permissions?.canDeleteMailboxes || false,
                               },
                             })}
-                            className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800"
+                            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
                             title="Edit Role"
                           >
                             <Settings2 className="w-3.5 h-3.5" />
@@ -7631,7 +7847,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                           <button
                             type="button"
                             onClick={() => handleDeleteRole(r.id)}
-                            className="p-1.5 text-slate-400 hover:text-rose-400 rounded hover:bg-slate-800"
+                            className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
                             title="Delete Role"
                           >
                             <Trash2 className="w-3.5 h-3.5" />

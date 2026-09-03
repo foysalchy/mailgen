@@ -4,28 +4,45 @@ import pool from '@/lib/db';
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId') || '1';
+    const userId = searchParams.get('userId');
+    const companyId = searchParams.get('companyId');
 
-    // Get campaigns with status and stats
-    const [campaigns]: any = await pool.query(
-      `SELECT c.*, l.name as list_name, u.email as sender_email
-       FROM bulk_campaigns c
-       JOIN contact_lists l ON c.list_id = l.id
-       JOIN virtual_users u ON c.mailbox_id = u.id
-       WHERE c.user_id = ?
-       ORDER BY c.created_at DESC`,
-      [userId]
-    );
+    // Get campaigns with status and stats (matching user_id OR company_id)
+    let campaignsQuery = `
+      SELECT c.*, l.name as list_name, u.email as sender_email
+      FROM bulk_campaigns c
+      LEFT JOIN contact_lists l ON c.list_id = l.id
+      LEFT JOIN virtual_users u ON c.mailbox_id = u.id
+      WHERE 1=1
+    `;
+    const campParams: any[] = [];
+    if (companyId) {
+      campaignsQuery += ` AND (c.user_id = ? OR c.user_id IN (SELECT id FROM users WHERE company_id = ?))`;
+      campParams.push(userId || '0', companyId);
+    } else if (userId) {
+      campaignsQuery += ` AND c.user_id = ?`;
+      campParams.push(userId);
+    }
+    campaignsQuery += ` ORDER BY c.created_at DESC`;
+    const [campaigns]: any = await pool.query(campaignsQuery, campParams);
 
     // Get contact lists (groups) with contact count and sample contacts
-    const [lists]: any = await pool.query(
-      `SELECT l.*, 
+    let listsQuery = `
+      SELECT l.*, 
         (SELECT COUNT(*) FROM contacts WHERE list_id = l.id) as contact_count
-       FROM contact_lists l
-       WHERE l.user_id = ?
-       ORDER BY l.created_at DESC`,
-      [userId]
-    );
+      FROM contact_lists l
+      WHERE 1=1
+    `;
+    const listParams: any[] = [];
+    if (companyId) {
+      listsQuery += ` AND (l.user_id = ? OR l.user_id IN (SELECT id FROM users WHERE company_id = ?))`;
+      listParams.push(userId || '0', companyId);
+    } else if (userId) {
+      listsQuery += ` AND l.user_id = ?`;
+      listParams.push(userId);
+    }
+    listsQuery += ` ORDER BY l.created_at DESC`;
+    const [lists]: any = await pool.query(listsQuery, listParams);
 
     // Fetch contacts for each list
     for (const list of lists) {
@@ -45,14 +62,14 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { action, userId = 1 } = body;
+    const { action, userId = 1, companyId } = body;
 
     // Action 1: Create Contact Group / List with contacts
     if (action === 'create_list') {
       const { name, contacts = [] } = body;
-      if (!name) return NextResponse.json({ success: false, message: 'Group name is required' }, { status: 400 });
+      if (!name || !name.trim()) return NextResponse.json({ success: false, message: 'Group name is required' }, { status: 400 });
 
-      const [resList]: any = await pool.query('INSERT INTO contact_lists (user_id, name) VALUES (?, ?)', [userId, name]);
+      const [resList]: any = await pool.query('INSERT INTO contact_lists (user_id, name) VALUES (?, ?)', [userId, name.trim()]);
       const listId = resList.insertId;
 
       if (contacts.length > 0) {
@@ -66,7 +83,16 @@ export async function POST(request: Request) {
         }
       }
 
-      return NextResponse.json({ success: true, listId, message: `Group "${name}" created with ${contacts.length} contacts!` });
+      return NextResponse.json({ success: true, listId, message: `Group "${name}" created successfully with ${contacts.length} contacts!` });
+    }
+
+    // Action 1b: Delete Group
+    if (action === 'delete_list') {
+      const { listId } = body;
+      if (!listId) return NextResponse.json({ success: false, message: 'listId is required' }, { status: 400 });
+      await pool.query('DELETE FROM contacts WHERE list_id = ?', [listId]);
+      await pool.query('DELETE FROM contact_lists WHERE id = ?', [listId]);
+      return NextResponse.json({ success: true, message: 'Contact group and its members deleted successfully' });
     }
 
     // Action 2: Add Contacts to existing group
