@@ -3787,15 +3787,20 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                           <span className={`text-xs truncate max-w-[130px] ${!msg.is_read ? 'font-bold text-white' : 'text-slate-300'}`}>
                             {msg.sender_name || msg.sender}
                           </span>
+                          {msg.thread_count > 1 && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.2 bg-[#925ce9]/20 text-[#925ce9] rounded-full border border-[#925ce9]/30 shrink-0">
+                              {msg.thread_count}
+                            </span>
+                          )}
                         </div>
                         <span className="text-[10px] text-slate-500">
                           {new Date(msg.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                         </span>
                       </div>
-                      <h4 className={`text-xs truncate mb-1 pl-6 ${!msg.is_read ? 'font-semibold text-slate-200' : 'text-slate-400'}`}>
-                        {msg.subject || '(No Subject)'}
+                      <h4 className={`text-xs truncate mb-1 pl-6 flex items-center justify-between gap-1 ${!msg.is_read ? 'font-semibold text-slate-200' : 'text-slate-400'}`}>
+                        <span className="truncate">{msg.subject || '(No Subject)'}</span>
                       </h4>
-                      <p className="text-[11px] text-slate-500 line-clamp-1 pl-6">{msg.snippet || 'No preview available'}</p>
+                      <p className="text-[11px] text-slate-500 line-clamp-1 pl-6">{cleanEmailContent(msg.snippet || 'No preview available')}</p>
                       {msg.is_scheduled === 1 && (
                         <div className="mt-1 flex items-center gap-1 text-[10px] text-amber-400 pl-6">
                           <Calendar className="w-3 h-3" /> Scheduled: {new Date(msg.scheduled_at).toLocaleString()}

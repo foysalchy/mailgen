@@ -47,35 +47,41 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: true, threadMessages: threadMsgs });
     }
 
+    // Group messages by normalized thread subject (Gmail Style Threaded Inbox List)
+    // Only fetch the latest message of each thread in the list, with thread_count and unread status
     let query = `
       SELECT m.id, m.mailbox_id, m.folder, m.sender, m.sender_name, m.recipients, m.subject, 
              m.body_html, m.body_text, m.headers_raw, SUBSTRING(m.body_text, 1, 150) as snippet, 
              m.has_attachments, m.is_read, m.is_starred, m.scheduled_at, m.is_scheduled, m.size_kb, m.created_at,
+             t.thread_count,
              (SELECT GROUP_CONCAT(cl.name, ':', cl.color) FROM message_labels ml JOIN custom_labels cl ON ml.label_id = cl.id WHERE ml.message_id = m.id) as labels
       FROM webmail_messages m
+      INNER JOIN (
+        SELECT 
+          TRIM(REGEXP_REPLACE(subject, '^(?i)(re|fwd|fw):\\\\s*', '')) as clean_sub,
+          MAX(id) as max_id,
+          COUNT(*) as thread_count
+        FROM webmail_messages
+        WHERE mailbox_id = ?
+        ${customFolderId ? 'AND custom_folder_id = ?' : ''}
+        ${labelId ? 'AND id IN (SELECT message_id FROM message_labels WHERE label_id = ?)' : ''}
+        ${folder === 'starred' ? 'AND is_starred = 1 AND folder != "trash"' : (!customFolderId && !labelId ? 'AND folder = ?' : '')}
+        ${search.trim() ? 'AND (subject LIKE ? OR sender LIKE ? OR body_text LIKE ?)' : ''}
+        GROUP BY clean_sub
+      ) t ON m.id = t.max_id
       WHERE m.mailbox_id = ?
     `;
-    const params: any[] = [mailboxId];
 
-    if (customFolderId) {
-      query += ' AND m.custom_folder_id = ?';
-      params.push(customFolderId);
-    } else if (labelId) {
-      query += ' AND m.id IN (SELECT message_id FROM message_labels WHERE label_id = ?)';
-      params.push(labelId);
-    } else if (folder === 'starred') {
-      query += ' AND m.is_starred = 1 AND m.folder != "trash"';
-    } else {
-      query += ' AND m.folder = ?';
-      params.push(folder);
-    }
-
+    const subParams: any[] = [mailboxId];
+    if (customFolderId) subParams.push(customFolderId);
+    if (labelId) subParams.push(labelId);
+    if (!customFolderId && !labelId && folder !== 'starred') subParams.push(folder);
     if (search.trim()) {
-      query += ` AND (m.subject LIKE ? OR m.sender LIKE ? OR m.body_text LIKE ?)`;
       const s = `%${search.trim()}%`;
-      params.push(s, s, s);
+      subParams.push(s, s, s);
     }
 
+    const params: any[] = [...subParams, mailboxId];
     query += ' ORDER BY m.created_at DESC LIMIT 100';
 
     const [messages]: any = await pool.query(query, params);
