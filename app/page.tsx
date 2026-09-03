@@ -4849,19 +4849,19 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
         {/* ===================== VIEW 3: DOMAINS ===================== */}
         {activeTab === 'domains' && (
-          <div className="flex-1 p-8 overflow-y-auto bg-slate-950">
+          <div className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto bg-slate-950">
             <div className="max-w-5xl mx-auto space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-white">Custom Domain Management</h2>
-                <p className="text-sm text-slate-400">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">Custom Domain Management</h2>
+                <p className="text-xs sm:text-sm text-slate-400 mt-1">
                   Add your domain and configure DNS (MX, SPF, DKIM, DMARC) for seamless mailbox creation and deliverability.
                 </p>
               </div>
 
               {/* Add domain form (permission enforced: Admin or canAddDomains) */}
               {(currentUser?.role !== 'mailbox_user' || currentUser?.permissions?.canAddDomains) ? (
-                <div className="p-5 bg-slate-900 rounded-xl border border-slate-800 shadow-sm">
-                  <form onSubmit={handleAddDomain} className="flex gap-3">
+                <div className="p-4 sm:p-5 bg-slate-900 rounded-xl border border-slate-800 shadow-sm">
+                  <form onSubmit={handleAddDomain} className="flex flex-col sm:flex-row gap-3">
                     <div className="flex-1 relative">
                       <Globe className="w-5 h-5 text-slate-400 absolute left-3 top-3" />
                       <input
@@ -4869,12 +4869,12 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                         placeholder="e.g. yourcompany.com"
                         value={newDomainInput}
                         onChange={(e) => setNewDomainInput(e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 pl-10 pr-4 py-2.5 text-sm rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full bg-slate-800 border border-slate-700 pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                     <button
                       type="submit"
-                      className="px-5 py-2.5 bg-[#925ce9] hover:bg-[#7e43e5] text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-[#925ce9]/30"
+                      className="px-5 py-2.5 bg-[#925ce9] hover:bg-[#7e43e5] text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-[#925ce9]/30"
                     >
                       <Plus className="w-4 h-4" />
                       <span>Add Domain</span>
@@ -4891,30 +4891,30 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               {/* Domain list */}
               <div className="space-y-4">
                 {domains.map((dom) => (
-                  <div key={dom.id} className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-                    <div className="flex items-center justify-between">
+                  <div key={dom.id} className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
                           <Globe className="w-5 h-5" />
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-base font-semibold text-white">{dom.name}</h3>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-sm sm:text-base font-semibold text-white truncate">{dom.name}</h3>
                             {dom.is_verified ? (
-                              <span className="flex items-center gap-1 text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
+                              <span className="flex items-center gap-1 text-[10px] sm:text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
                                 <CheckCircle2 className="w-3 h-3" /> Verified
                               </span>
                             ) : (
-                              <span className="flex items-center gap-1 text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full font-medium">
+                              <span className="flex items-center gap-1 text-[10px] sm:text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full font-medium">
                                 <Clock className="w-3 h-3" /> DNS Pending
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-slate-400 mt-0.5">{dom.mailbox_count || 0} Mailboxes created</p>
+                          <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">{dom.mailbox_count || 0} Mailboxes created</p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <button
                           onClick={() => handleVerifyDns(dom.id)}
                           disabled={verifyingDns}
@@ -4959,9 +4959,9 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
                     {selectedDomainDns?.id === dom.id && (
                       <div className="mt-5 pt-5 border-t border-slate-800/80">
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
                           <div>
-                            <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                            <h4 className="text-sm font-bold text-white flex items-center gap-2 flex-wrap">
                               <span>Required DNS Setup Guide for</span>
                               <span className="text-blue-400 font-mono underline">{dom.name}</span>
                             </h4>
@@ -4971,7 +4971,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                           </div>
                           <button
                             onClick={() => handleExportCloudflareZoneFile(dom)}
-                            className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-bold rounded-lg shadow flex items-center gap-1.5 transition-all cursor-pointer"
+                            className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-bold rounded-lg shadow flex items-center gap-1.5 transition-all cursor-pointer self-start sm:self-auto"
                             title="Download standard BIND DNS zone file for 1-click import into Cloudflare"
                           >
                             <Download className="w-3.5 h-3.5 text-slate-950" />
@@ -4980,7 +4980,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                         </div>
 
                         <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/60 p-1">
-                          <table className="w-full text-xs text-left">
+                          <table className="w-full text-xs text-left min-w-[500px]">
                             <thead className="bg-slate-900 text-slate-400 font-semibold border-b border-slate-800">
                               <tr>
                                 <th className="p-3">Record Type</th>
@@ -5020,7 +5020,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                                   <button
                                     onClick={() => {
                                       navigator.clipboard.writeText('v=spf1 ip4:62.72.12.195 ~all');
-                                      toast.success('SPF record copied!');
+                                      toast.success('SPF text copied!');
                                     }}
                                     className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] rounded font-medium inline-flex items-center gap-1"
                                   >
@@ -5033,18 +5033,15 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                               <tr className="hover:bg-slate-900/50 transition-colors">
                                 <td className="p-3 text-purple-400 font-bold">TXT (DKIM)</td>
                                 <td className="p-3">mail._domainkey</td>
-                                <td className="p-3 truncate max-w-xs text-purple-300">
-                                  {dom.dkim_public_key ? `v=DKIM1; k=rsa; p=${dom.dkim_public_key.replace(/-----[^\n]+-----|\n|\r/g, '').trim()}` : 'v=DKIM1; k=rsa; p=...'}
+                                <td className="p-3 text-purple-300 max-w-xs truncate" title={dom.dkim_public_key}>
+                                  {dom.dkim_public_key ? `v=DKIM1; k=rsa; p=${dom.dkim_public_key}` : 'Generating DKIM key...'}
                                 </td>
                                 <td className="p-3 text-slate-400">Auto</td>
                                 <td className="p-3 text-right font-sans">
                                   <button
                                     onClick={() => {
-                                      const dkimVal = dom.dkim_public_key
-                                        ? `v=DKIM1; k=rsa; p=${dom.dkim_public_key.replace(/-----[^\n]+-----|\n|\r/g, '').trim()}`
-                                        : 'v=DKIM1; k=rsa; p=...';
-                                      navigator.clipboard.writeText(dkimVal);
-                                      toast.success('DKIM record copied!');
+                                      navigator.clipboard.writeText(`v=DKIM1; k=rsa; p=${dom.dkim_public_key}`);
+                                      toast.success('DKIM public key copied!');
                                     }}
                                     className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] rounded font-medium inline-flex items-center gap-1"
                                   >
@@ -5057,12 +5054,12 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                               <tr className="hover:bg-slate-900/50 transition-colors">
                                 <td className="p-3 text-amber-400 font-bold">TXT (DMARC)</td>
                                 <td className="p-3">_dmarc</td>
-                                <td className="p-3 text-amber-300">v=DMARC1; p=none; sp=none;</td>
+                                <td className="p-3 text-amber-300">v=DMARC1; p=none; sp=none; aspf=r;</td>
                                 <td className="p-3 text-slate-400">Auto</td>
                                 <td className="p-3 text-right font-sans">
                                   <button
                                     onClick={() => {
-                                      navigator.clipboard.writeText('v=DMARC1; p=none; sp=none;');
+                                      navigator.clipboard.writeText('v=DMARC1; p=none; sp=none; aspf=r;');
                                       toast.success('DMARC record copied!');
                                     }}
                                     className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] rounded font-medium inline-flex items-center gap-1"
@@ -5073,16 +5070,6 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                               </tr>
                             </tbody>
                           </table>
-                        </div>
-
-                        <div className="mt-3 p-3 bg-blue-950/30 border border-blue-500/20 rounded-xl text-xs text-slate-300 leading-relaxed">
-                          <p className="flex items-center gap-1.5 font-semibold text-blue-400 mb-1">
-                            <span>💡 Cloudflare Setup Tip:</span>
-                          </p>
-                          <p>
-                            • Set <strong>Proxy status</strong> to <strong>DNS Only (Gray Cloud ☁️)</strong> for MX and TXT records.<br/>
-                            • Your main website (A or CNAME record) does NOT need to be changed and can stay on Vercel/Shopify/etc.
-                          </p>
                         </div>
                       </div>
                     )}
@@ -5095,16 +5082,16 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
         {/* ===================== VIEW 4: MAILBOXES ===================== */}
         {activeTab === 'mailboxes' && (
-          <div className="flex-1 p-8 overflow-y-auto bg-slate-950">
+          <div className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto bg-slate-950">
             <div className="max-w-5xl mx-auto space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-white">Professional Email Accounts</h2>
-                  <p className="text-sm text-slate-400">
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">Professional Email Accounts</h2>
+                  <p className="text-xs sm:text-sm text-slate-400 mt-1">
                     Accounts created: {mailboxes.length} of {currentUser.max_mailboxes || 5} allowed.
                   </p>
                 </div>
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   {currentUser.role !== 'mailbox_user' && (
                     <button
                       onClick={() => {
@@ -5135,8 +5122,8 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 </div>
               </div>
 
-              <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
-                <table className="w-full text-left text-sm">
+              <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-x-auto shadow-sm">
+                <table className="w-full text-left text-xs sm:text-sm min-w-[650px]">
                   <thead className="bg-slate-950 text-slate-400 text-xs border-b border-slate-800">
                     <tr>
                       <th className="p-4">Email Address</th>
@@ -5212,21 +5199,21 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
         {/* ===================== VIEW 5: BULK CAMPAIGNS & GROUPS ===================== */}
         {activeTab === 'bulk' && (
-          <div className="flex-1 p-8 overflow-y-auto bg-slate-950">
+          <div className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto bg-slate-950">
             <div className="max-w-5xl mx-auto space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-white">Bulk Email Campaigns & Contact Groups</h2>
-                  <p className="text-sm text-slate-400">
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">Bulk Email Campaigns & Contact Groups</h2>
+                  <p className="text-xs sm:text-sm text-slate-400 mt-1">
                     Create contact groups, personalize emails using dynamic tags, and dispatch in throttled queues.
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {(currentUser?.role !== 'sub_user' || currentUser?.permissions?.canSendBulk) ? (
                     <>
                       <button
                         onClick={() => setCreateGroupModal(true)}
-                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 border border-slate-700"
+                        className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-2 border border-slate-700"
                       >
                         <Users className="w-4 h-4 text-blue-400" />
                         <span>Create Contact Group</span>
@@ -5242,7 +5229,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                           setBulkModal(true);
                         }}
                         disabled={mailboxes.length === 0}
-                        className="px-4 py-2 bg-gradient-to-r from-[#925ce9] to-[#7e43e5] hover:from-[#8247e5] hover:to-[#6d32d5] disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-[#925ce9]/25"
+                        className="px-4 py-2 bg-gradient-to-r from-[#925ce9] to-[#7e43e5] hover:from-[#8247e5] hover:to-[#6d32d5] disabled:opacity-50 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-[#925ce9]/25"
                       >
                         <Send className="w-4 h-4" />
                         <span>Compose Bulk Campaign</span>
@@ -5257,9 +5244,9 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </div>
 
               {/* Contact Groups List */}
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <h3 className="text-xs sm:text-sm font-semibold text-white flex items-center gap-2">
                     <Users className="w-4 h-4 text-emerald-400" /> Your Contact Groups ({contactLists.length})
                   </h3>
                   <button
@@ -5278,9 +5265,9 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {contactLists.map((grp) => (
                       <div key={grp.id} className="bg-slate-950 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between group">
-                        <div className="flex-1 pr-3">
-                          <h4 className="text-xs font-bold text-white flex items-center gap-2">
-                            <span>{grp.name}</span>
+                        <div className="flex-1 pr-3 min-w-0">
+                          <h4 className="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
+                            <span className="truncate">{grp.name}</span>
                             <span className="text-[10px] bg-[#925ce9]/10 text-[#925ce9] px-2 py-0.5 rounded-full font-medium border border-[#925ce9]/20">
                               {grp.contact_count} contacts
                             </span>
@@ -5289,7 +5276,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                             Sample: {grp.contacts?.slice(0, 3).map((c: any) => c.email).join(', ') || 'No contacts yet'}
                           </p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
                           <button
                             onClick={() => {
                               setBulkData((prev) => ({ ...prev, listId: grp.id.toString() }));
@@ -5314,14 +5301,14 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </div>
 
               {/* Campaigns history */}
-              <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+              <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-x-auto">
                 <div className="p-4 border-b border-slate-800">
                   <h3 className="text-sm font-semibold text-white">Recent Dispatched Campaigns</h3>
                 </div>
                 {campaigns.length === 0 ? (
                   <div className="p-8 text-center text-xs text-slate-500">No bulk campaigns launched yet.</div>
                 ) : (
-                  <div className="divide-y divide-slate-800">
+                  <div className="divide-y divide-slate-800 min-w-[500px]">
                     {campaigns.map((c) => (
                       <div key={c.id} className="p-4 flex items-center justify-between">
                         <div>
@@ -5344,18 +5331,18 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
         {/* ===================== VIEW 6: SUB-USERS & ROLE PERMISSIONS ===================== */}
         {(activeTab as any) === 'subusers' && (
-          <div className="flex-1 p-8 overflow-y-auto bg-slate-950">
+          <div className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto bg-slate-950">
             <div className="max-w-5xl mx-auto space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-white">Sub-Users & Role Permissions</h2>
-                  <p className="text-sm text-slate-400">
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">Sub-Users & Role Permissions</h2>
+                  <p className="text-xs sm:text-sm text-slate-400 mt-1">
                     Create sub-user accounts with custom granular permissions (Bulk Send, Delete Mail, Folders, Tags, Domains, Mailboxes).
                   </p>
                 </div>
                 <button
                   onClick={() => setSubUserModal(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-[#925ce9] to-indigo-600 hover:from-[#8247e5] hover:to-indigo-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-[#925ce9]/25"
+                  className="px-4 py-2 bg-gradient-to-r from-[#925ce9] to-indigo-600 hover:from-[#8247e5] hover:to-indigo-500 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-[#925ce9]/25 self-start sm:self-auto"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Create Sub-User</span>
@@ -5375,9 +5362,9 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 ) : (
                   <div className="divide-y divide-slate-800">
                     {subUsers.map((su) => (
-                      <div key={su.id} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div key={su.id} className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm font-bold text-white">{su.name}</span>
                             <span className="text-xs text-slate-400">({su.email})</span>
                             <span className="text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2 py-0.5 rounded-full font-semibold">
@@ -5439,24 +5426,24 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
         {/* ===================== VIEW: EMAIL REST API & DEVELOPER KEYS ===================== */}
         {activeTab === 'apikeys' && (
-          <div className="flex-1 p-8 overflow-y-auto bg-slate-950">
+          <div className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto bg-slate-950">
             <div className="max-w-6xl mx-auto space-y-6">
               {/* Header */}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-2xl font-bold text-white">Email REST API & Developer Keys</h2>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">Email REST API & Developer Keys</h2>
                     <span className="px-2 py-0.5 text-[10px] bg-emerald-500/20 text-emerald-300 font-mono font-bold rounded">
                       No SMTP Needed
                     </span>
                   </div>
-                  <p className="text-sm text-slate-400 mt-1">
+                  <p className="text-xs sm:text-sm text-slate-400 mt-1">
                     Send emails programmatically from your website, CRM, or backend by making a simple HTTP POST request to our REST API endpoint.
                   </p>
                 </div>
                 <button
                   onClick={() => setNewKeyModal(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-[#925ce9] to-[#7e43e5] hover:from-[#8247e5] hover:to-[#6d32d5] text-white text-sm font-semibold rounded-xl shadow-lg shadow-[#925ce9]/30 flex items-center gap-2"
+                  className="px-4 py-2 bg-gradient-to-r from-[#925ce9] to-[#7e43e5] hover:from-[#8247e5] hover:to-[#6d32d5] text-white text-xs sm:text-sm font-semibold rounded-xl shadow-lg shadow-[#925ce9]/30 flex items-center gap-2 self-start sm:self-auto"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Generate New API Key</span>
@@ -5517,7 +5504,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 ) : (
                   <div className="divide-y divide-slate-800">
                     {apiKeys.map((k) => (
-                      <div key={k.id} className="p-4 flex items-center justify-between hover:bg-slate-800/30 transition-colors">
+                      <div key={k.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-800/30 transition-colors">
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-white">{k.name}</span>
@@ -5527,7 +5514,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                               {k.status}
                             </span>
                           </div>
-                          <div className="flex items-center gap-4 text-xs text-slate-400 mt-1">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 mt-1">
                             <span>Key: <code className="font-mono text-slate-300">{k.api_key.substring(0, 14)}••••••••••</code></span>
                             <span>Sender: <strong className="text-slate-300">{k.sender_email || 'Any verified mailbox'}</strong></span>
                             <span>Requests: <strong className="text-slate-300">{k.total_requests || 0}</strong></span>
@@ -5535,7 +5522,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 self-start sm:self-auto">
                           <button
                             onClick={() => {
                               navigator.clipboard.writeText(k.api_key);
@@ -5568,13 +5555,13 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </div>
 
               {/* Interactive Integration Guides / Code Snippets */}
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Terminal className="w-4 h-4 text-blue-400" />
-                    <h3 className="text-sm font-bold text-white">How to Send Email from your Website (Code Examples)</h3>
+                    <h3 className="text-xs sm:text-sm font-bold text-white">How to Send Email from your Website (Code Examples)</h3>
                   </div>
-                  <span className="text-xs text-slate-400 font-mono">POST /api/v1/send</span>
+                  <span className="text-[11px] text-slate-400 font-mono">POST /api/v1/send</span>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -5698,18 +5685,18 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
         {/* ===================== VIEW: EMAIL TEMPLATES BUILDER ===================== */}
         {activeTab === 'templates' && (
-          <div className="flex-1 p-8 overflow-y-auto bg-slate-950">
+          <div className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto bg-slate-950">
             <div className="max-w-6xl mx-auto space-y-6">
               {/* Header */}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-2xl font-bold text-white">Email Templates Library</h2>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">Email Templates Library</h2>
                     <span className="px-2 py-0.5 text-[10px] bg-indigo-500/20 text-indigo-300 font-mono font-bold rounded">
                       Reusable & Tag-Supported
                     </span>
                   </div>
-                  <p className="text-sm text-slate-400 mt-1">
+                  <p className="text-xs sm:text-sm text-slate-400 mt-1">
                     Design, organize, and store reusable email templates for one-click composing, bulk marketing campaigns, or transactional notifications.
                   </p>
                 </div>
@@ -5719,7 +5706,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                       setTemplateFormData({ id: null, name: '', subject: '', category: 'General', bodyHtml: '' });
                       setTemplateModal(true);
                     }}
-                    className="px-4 py-2 bg-gradient-to-r from-[#925ce9] to-[#7e43e5] hover:from-[#8247e5] hover:to-[#6d32d5] text-white text-sm font-semibold rounded-xl shadow-lg shadow-[#925ce9]/30 flex items-center gap-2"
+                    className="px-4 py-2 bg-gradient-to-r from-[#925ce9] to-[#7e43e5] hover:from-[#8247e5] hover:to-[#6d32d5] text-white text-xs sm:text-sm font-semibold rounded-xl shadow-lg shadow-[#925ce9]/30 flex items-center gap-2 self-start sm:self-auto"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Create New Template</span>
@@ -5729,7 +5716,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
               {/* Templates Grid */}
               {emailTemplates.length === 0 ? (
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 sm:p-12 text-center">
                   <FileText className="w-12 h-12 text-indigo-400 opacity-40 mx-auto mb-3" />
                   <h3 className="text-sm font-bold text-white mb-1">No templates found</h3>
                   <p className="text-xs text-slate-400 mb-4">Create your first reusable email template to save time composing emails.</p>
@@ -5829,16 +5816,16 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
         {/* ===================== VIEW: BILLING & INVOICES ===================== */}
         {activeTab === 'billing' && (
-          <div className="flex-1 p-8 overflow-y-auto bg-slate-950">
+          <div className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto bg-slate-950">
             <div className="max-w-5xl mx-auto space-y-6">
               {/* Header */}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                    <Receipt className="w-6 h-6 text-amber-400" />
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white flex items-center gap-2 tracking-tight">
+                    <Receipt className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 shrink-0" />
                     <span>Billing & Monthly Invoices</span>
                   </h2>
-                  <p className="text-sm text-slate-400">
+                  <p className="text-xs sm:text-sm text-slate-400 mt-1">
                     Manage your subscription plan, request package upgrades, and view verified payment receipts.
                   </p>
                 </div>
@@ -5847,7 +5834,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     setSelectedUpgradePlan(plans[1] || plans[0]);
                     setUpgradeModal(true);
                   }}
-                  className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white text-sm font-bold rounded-xl shadow-lg shadow-amber-500/20 flex items-center gap-2"
+                  className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white text-xs sm:text-sm font-bold rounded-xl shadow-lg shadow-amber-500/20 flex items-center gap-2 self-start sm:self-auto"
                 >
                   <ArrowUpCircle className="w-4 h-4" />
                   <span>Upgrade Package</span>
@@ -5859,8 +5846,8 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start gap-3">
                   <Clock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-bold text-amber-300">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-xs sm:text-sm font-bold text-amber-300">
                         Package Upgrade Pending Super Admin Approval
                       </h4>
                       <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded font-bold uppercase">
@@ -5876,7 +5863,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               )}
 
               {/* Current Subscription Card */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Current Active Plan</span>
                   <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold">
@@ -5886,15 +5873,15 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
                   <div>
-                    <h3 className="text-2xl font-extrabold text-white">
+                    <h3 className="text-xl sm:text-2xl font-extrabold text-white">
                       {billingSummary?.currentPlan?.name || currentUser.plan_name || 'Standard Plan'}
                     </h3>
                     <p className="text-xs text-slate-400 mt-1">
                       Billing cycle: <strong>Monthly</strong> • Next invoice generated automatically.
                     </p>
                   </div>
-                  <div className="text-right">
-                    <div className="text-3xl font-black text-white">
+                  <div className="text-left md:text-right">
+                    <div className="text-2xl sm:text-3xl font-black text-white">
                       ${billingSummary?.currentPlan?.price || currentUser.price_monthly || 0}
                       <span className="text-xs text-slate-400 font-normal"> / month</span>
                     </div>
@@ -5902,7 +5889,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 </div>
 
                 {/* Quota breakdown */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
                   <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
                     <span className="text-[11px] text-slate-400 block">Custom Domains</span>
                     <span className="text-base font-bold text-white">
@@ -5925,7 +5912,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </div>
 
               {/* Invoices Table */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-x-auto shadow-sm">
                 <div className="p-4 border-b border-slate-800 flex items-center justify-between">
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
                     <Receipt className="w-4 h-4 text-amber-400" />
@@ -5944,7 +5931,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     No invoices generated yet.
                   </div>
                 ) : (
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full text-left text-xs min-w-[650px]">
                     <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
                       <tr>
                         <th className="p-4">Invoice #</th>
@@ -6010,21 +5997,21 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
         {/* ===================== VIEW: SUPER ADMIN PANEL ===================== */}
         {activeTab === 'superadmin' && (
-          <div className="flex-1 p-8 overflow-y-auto bg-slate-950">
+          <div className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto bg-slate-950">
             <div className="max-w-6xl mx-auto space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                    <ShieldCheck className="w-6 h-6 text-purple-400" />
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white flex items-center gap-2 tracking-tight">
+                    <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400 shrink-0" />
                     <span>Super Admin Platform Control</span>
                   </h2>
-                  <p className="text-sm text-slate-400">
+                  <p className="text-xs sm:text-sm text-slate-400 mt-1">
                     Review and approve subscription invoices, activate plan upgrades, and control user access.
                   </p>
                 </div>
                 <button
                   onClick={() => fetchAdminData()}
-                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-xl border border-slate-700 flex items-center gap-1.5"
+                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-xl border border-slate-700 flex items-center gap-1.5 self-start sm:self-auto"
                 >
                   <RefreshCw className="w-3.5 h-3.5" /> Refresh Data
                 </button>
@@ -6035,26 +6022,26 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
                     <span className="text-xs text-slate-400 block">Total Users</span>
-                    <span className="text-2xl font-extrabold text-white">{adminStats.total_users || 0}</span>
+                    <span className="text-xl sm:text-2xl font-extrabold text-white">{adminStats.total_users || 0}</span>
                   </div>
                   <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
                     <span className="text-xs text-amber-400 font-semibold block">Pending Invoices</span>
-                    <span className="text-2xl font-extrabold text-amber-400">{adminStats.pending_invoices || 0}</span>
+                    <span className="text-xl sm:text-2xl font-extrabold text-amber-400">{adminStats.pending_invoices || 0}</span>
                   </div>
                   <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
                     <span className="text-xs text-slate-400 block">Hosted Domains</span>
-                    <span className="text-2xl font-extrabold text-white">{adminStats.total_domains || 0}</span>
+                    <span className="text-xl sm:text-2xl font-extrabold text-white">{adminStats.total_domains || 0}</span>
                   </div>
                   <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
                     <span className="text-xs text-slate-400 block">Total Mailboxes</span>
-                    <span className="text-2xl font-extrabold text-white">{adminStats.total_mailboxes || 0}</span>
+                    <span className="text-xl sm:text-2xl font-extrabold text-white">{adminStats.total_mailboxes || 0}</span>
                   </div>
                 </div>
               )}
 
               {/* SaaS Companies (Tenants) Management Section */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-                <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-x-auto shadow-sm">
+                <div className="p-4 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <Building2 className="w-5 h-5 text-amber-400" />
                     <div>
@@ -6062,7 +6049,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                       <p className="text-[11px] text-slate-400">Isolated organizations, owner accounts, and plan management</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <button
                       onClick={() => setCreateCompanyModal(true)}
                       className="px-3.5 py-1.5 bg-gradient-to-r from-[#925ce9] to-[#7e43e5] hover:from-[#8247e5] hover:to-[#6d32d5] text-white font-bold text-xs rounded-xl shadow-md shadow-[#925ce9]/25 flex items-center gap-1.5 transition-all"
@@ -6079,7 +6066,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 {adminCompanies.length === 0 ? (
                   <div className="p-8 text-center text-xs text-slate-500">No companies registered yet.</div>
                 ) : (
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full text-left text-xs min-w-[700px]">
                     <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
                       <tr>
                         <th className="p-3.5">Company Name</th>
@@ -6177,7 +6164,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </div>
 
               {/* Pending Invoices Approval Section */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-x-auto shadow-sm">
                 <div className="p-4 border-b border-slate-800 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-amber-400" />
@@ -6189,7 +6176,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 {adminInvoices.length === 0 ? (
                   <div className="p-8 text-center text-xs text-slate-500">No invoices in the system.</div>
                 ) : (
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full text-left text-xs min-w-[700px]">
                     <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
                       <tr>
                         <th className="p-3.5">Invoice #</th>
@@ -6271,11 +6258,11 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </div>
 
               {/* Users management list */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-x-auto shadow-sm">
                 <div className="p-4 border-b border-slate-800">
                   <h3 className="text-sm font-bold text-white">All Platform Accounts ({adminUsers.length})</h3>
                 </div>
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs min-w-[650px]">
                   <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
                     <tr>
                       <th className="p-3.5">User</th>
@@ -6333,14 +6320,14 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
         {/* ===================== VIEW: SETTINGS & PROFILE (COMPANY & USER PROFILE) ===================== */}
         {activeTab === 'settings' && (
-          <div className="flex-1 p-8 overflow-y-auto bg-slate-950">
+          <div className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto bg-slate-950">
             <div className="max-w-5xl mx-auto space-y-8">
               <div>
                 <div className="flex items-center gap-2">
-                  <Settings2 className="w-6 h-6 text-blue-400" />
-                  <h2 className="text-2xl font-bold text-white">Settings & Profile Management</h2>
+                  <Settings2 className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">Settings & Profile Management</h2>
                 </div>
-                <p className="text-sm text-slate-400 mt-1">
+                <p className="text-xs sm:text-sm text-slate-400 mt-1">
                   Update your organization identity, business contact information, and personal account credentials.
                 </p>
               </div>
@@ -6580,9 +6567,9 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
       {/* ===================== GMAIL-STYLE DOCKED COMPOSE WINDOW ===================== */}
       {composeModal && (
-        <div className="fixed bottom-0 right-10 z-50 shadow-2xl transition-all duration-200">
+        <div className="fixed inset-x-0 bottom-0 sm:inset-x-auto sm:right-6 md:right-10 z-50 shadow-2xl transition-all duration-200">
           <div className={`bg-slate-900 border border-slate-700/80 rounded-t-2xl shadow-2xl overflow-hidden flex flex-col transition-all ${
-            isComposeMinimized ? 'w-80 h-12' : 'w-[580px] h-[600px]'
+            isComposeMinimized ? 'w-full sm:w-80 h-12' : 'w-full sm:w-[540px] md:w-[600px] h-[90vh] sm:h-[600px]'
           }`}>
             {/* Window Titlebar (Gmail Style) */}
             <div className="p-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between select-none cursor-pointer" onClick={() => setIsComposeMinimized(!isComposeMinimized)}>
