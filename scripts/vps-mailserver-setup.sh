@@ -23,14 +23,11 @@ echo "[1/8] Updating system packages..."
 sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
 sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
 
-# 2. Install Dependencies (MariaDB, Nginx, Postfix, Dovecot, OpenDKIM, Certbot, Git, Curl)
-echo "[2/8] Installing Web, Database, and Mail server packages..."
+# 2. Install Mail Server & Proxy Packages (Safe for existing MySQL/Apache)
+echo "[2/8] Installing Mail server packages..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y \
   curl \
   git \
-  nginx \
-  mariadb-server \
-  mariadb-client \
   postfix \
   postfix-mysql \
   dovecot-core \
@@ -41,14 +38,15 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y \
   opendkim \
   opendkim-tools \
   certbot \
-  python3-certbot-nginx \
   ufw
 
 # 3. Install Node.js 20 LTS & PM2
 echo "[3/8] Installing Node.js 20 LTS and PM2..."
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
-sudo npm install -g pm2
+if ! command -v node &> /dev/null; then
+  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+  sudo apt install -y nodejs
+fi
+sudo npm install -g pm2 || true
 
 # 4. Create vmail user for storing all tenant emails
 echo "[4/8] Configuring vmail storage user..."
@@ -57,12 +55,9 @@ sudo useradd -g vmail -u 5000 vmail -d /var/mail/vmail -m || true
 sudo chown -R vmail:vmail /var/mail/vmail
 sudo chmod -R 770 /var/mail/vmail
 
-# 5. Configure MariaDB Database & Users
-echo "[5/8] Setting up MariaDB database and user..."
-sudo mysql -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-sudo mysql -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';"
-sudo mysql -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';"
-sudo mysql -e "FLUSH PRIVILEGES;"
+# 5. Ensure database exists in MySQL
+echo "[5/8] Verifying mailserver database in MySQL..."
+mysql -u ${DB_USER} -p"${DB_PASS}" -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null || true
 
 # 6. Configure Postfix for MySQL Virtual Domains & Users
 echo "[6/8] Configuring Postfix virtual lookup maps..."
