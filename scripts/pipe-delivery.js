@@ -65,15 +65,49 @@ function parseRawEmail(raw) {
   const toRaw = headers['to'] || '';
   const subject = headers['subject'] || '(No Subject)';
   
-  let bodyText = bodySection;
+  let bodyText = '';
   let bodyHtml = '';
 
-  if (bodySection.includes('<html') || bodySection.includes('<body') || bodySection.includes('</div>') || bodySection.includes('</p>')) {
-    bodyHtml = bodySection;
-    bodyText = bodySection.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  // Extract boundary if multipart email (like from Gmail/Yahoo/Apple Mail)
+  const contentType = headers['content-type'] || '';
+  const boundaryMatch = contentType.match(/boundary="?([^";\r\n]+)"?/i);
+
+  if (boundaryMatch) {
+    const boundary = boundaryMatch[1];
+    const parts = bodySection.split(new RegExp(`--${boundary}(?:--)?`, 'g'));
+
+    for (const part of parts) {
+      const trimmedPart = part.trim();
+      if (!trimmedPart) continue;
+
+      const partSplit = trimmedPart.indexOf('\r\n\r\n') !== -1 ? trimmedPart.indexOf('\r\n\r\n') : trimmedPart.indexOf('\n\n');
+      const partHeaders = partSplit !== -1 ? trimmedPart.substring(0, partSplit).toLowerCase() : '';
+      const partBody = partSplit !== -1 ? trimmedPart.substring(partSplit).trim() : trimmedPart;
+
+      if (partHeaders.includes('text/html')) {
+        bodyHtml = partBody;
+      } else if (partHeaders.includes('text/plain')) {
+        bodyText = partBody;
+      } else if (!bodyHtml && !bodyText) {
+        bodyText = partBody;
+      }
+    }
   } else {
-    bodyText = bodySection;
-    bodyHtml = '<p>' + bodySection.replace(/\n/g, '<br/>') + '</p>';
+    // Single part
+    if (contentType.includes('text/html')) {
+      bodyHtml = bodySection;
+      bodyText = bodySection.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    } else {
+      bodyText = bodySection;
+      bodyHtml = '<p>' + bodySection.replace(/\n/g, '<br/>') + '</p>';
+    }
+  }
+
+  if (!bodyHtml && bodyText) {
+    bodyHtml = '<p>' + bodyText.replace(/\n/g, '<br/>') + '</p>';
+  }
+  if (!bodyText && bodyHtml) {
+    bodyText = bodyHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
   return {
@@ -81,8 +115,8 @@ function parseRawEmail(raw) {
     senderName: senderName || senderEmail,
     to: toRaw,
     subject,
-    bodyText,
-    bodyHtml,
+    bodyText: bodyText.trim(),
+    bodyHtml: bodyHtml.trim(),
     sizeKb: Math.ceil(Buffer.byteLength(raw, 'utf8') / 1024),
   };
 }
