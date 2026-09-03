@@ -15,6 +15,7 @@ export async function GET(request: Request) {
     const [rows]: any = await pool.query(
       `SELECT u.id, u.name, u.email, u.role, u.company_id, u.status as user_status,
               c.name as company_name, c.business_email, c.phone, c.address, c.status as company_status,
+              c.email_signature, c.email_footer,
               p.name as plan_name
        FROM users u
        LEFT JOIN companies c ON u.company_id = c.id
@@ -46,6 +47,8 @@ export async function GET(request: Request) {
         phone: user.phone,
         address: user.address,
         status: user.company_status,
+        emailSignature: user.email_signature || '',
+        emailFooter: user.email_footer || '',
       },
     });
   } catch (error: any) {
@@ -136,10 +139,10 @@ export async function POST(request: Request) {
     }
 
     // -------------------------------------------------------------
-    // ACTION 2: UPDATE COMPANY INFORMATION (Name, Business Email, Phone, Address)
+    // ACTION 2: UPDATE COMPANY INFORMATION & EMAIL SIGNATURE / FOOTER
     // -------------------------------------------------------------
     if (action === 'update_company') {
-      const { companyName, businessEmail, phone, address } = body;
+      const { companyName, businessEmail, phone, address, emailSignature, emailFooter } = body;
 
       if (!companyName) {
         return NextResponse.json({ success: false, message: 'Company Name is required' }, { status: 400 });
@@ -149,12 +152,20 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'No company associated with this account' }, { status: 400 });
       }
 
+      // Ensure signature and footer columns exist
+      try {
+        await pool.query('ALTER TABLE companies ADD COLUMN email_signature LONGTEXT NULL');
+      } catch (e) {}
+      try {
+        await pool.query('ALTER TABLE companies ADD COLUMN email_footer LONGTEXT NULL');
+      } catch (e) {}
+
       // Update companies table
       await pool.query(
         `UPDATE companies 
-         SET name = ?, business_email = ?, phone = ?, address = ? 
+         SET name = ?, business_email = ?, phone = ?, address = ?, email_signature = ?, email_footer = ? 
          WHERE id = ?`,
-        [companyName.trim(), (businessEmail || '').trim(), (phone || '').trim(), (address || '').trim(), companyId]
+        [companyName.trim(), (businessEmail || '').trim(), (phone || '').trim(), (address || '').trim(), emailSignature || '', emailFooter || '', companyId]
       );
 
       // Fetch fresh user record with updated company name
@@ -171,7 +182,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         success: true,
         user: freshRows[0],
-        message: 'Company organization details updated successfully!',
+        message: 'Company organization and email branding details updated successfully!',
       });
     }
 
