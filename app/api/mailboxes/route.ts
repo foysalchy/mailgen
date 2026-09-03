@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     const companyId = searchParams.get('companyId');
 
     let query = `
-      SELECT u.id, u.email, u.full_name, u.quota_mb, u.is_active, u.created_at, d.name AS domain_name,
+      SELECT u.id, u.email, u.full_name, u.signature, u.quota_mb, u.is_active, u.created_at, d.name AS domain_name,
         (SELECT COUNT(*) FROM webmail_messages WHERE mailbox_id = u.id AND folder = 'inbox' AND is_read = 0) AS unread_count,
         (SELECT COUNT(*) FROM webmail_messages WHERE mailbox_id = u.id) AS total_messages
       FROM virtual_users u
@@ -45,11 +45,16 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { domainId, username, password, fullName, quotaMb = 2048, userId = 1, companyId } = body;
+    const { domainId, username, password, fullName, signature, quotaMb = 2048, userId = 1, companyId } = body;
 
     if (!domainId || !username || !password) {
       return NextResponse.json({ success: false, message: 'Missing required mailbox fields' }, { status: 400 });
     }
+
+    // Ensure signature column exists
+    try {
+      await pool.query('ALTER TABLE virtual_users ADD COLUMN signature LONGTEXT NULL');
+    } catch (e) {}
 
     // Resolve company_id if not explicitly provided
     let resolvedCompanyId = companyId;
@@ -75,16 +80,14 @@ export async function POST(request: Request) {
     }
 
     // Hash password with Dovecot compatible SHA-512 crypt or bcrypt
-    // {BLF-CRYPT} or standard bcrypt is universally supported by Dovecot & Postfix
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    // Prefix {BLF-CRYPT} so Dovecot recognizes standard bcrypt hash in MySQL
     const dovecotPassword = `{BLF-CRYPT}${hashedPassword}`;
 
     const [result]: any = await pool.query(
-      `INSERT INTO virtual_users (company_id, domain_id, user_id, email, password, full_name, quota_mb)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [resolvedCompanyId || 1, domainId, userId, email, dovecotPassword, fullName || cleanUsername, quotaMb]
+      `INSERT INTO virtual_users (company_id, domain_id, user_id, email, password, full_name, signature, quota_mb)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [resolvedCompanyId || 1, domainId, userId, email, dovecotPassword, fullName || cleanUsername, signature || '', quotaMb]
     );
 
     const mailboxId = result.insertId;
@@ -126,9 +129,60 @@ export async function POST(request: Request) {
         id: mailboxId,
         email,
         full_name: fullName,
+        signature: signature || '',
         quota_mb: quotaMb,
       },
     });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  }
+}
+
+// PUT / PATCH: Update existing mailbox settings (Full Name, Individual Signature, Quota MB, or Password)
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const { mailboxId, fullName, signature, quotaMb, password } = body;
+
+    if (!mailboxId) {
+      return NextResponse.json({ success: false, message: 'mailboxId is required' }, { status: 400 });
+    }
+
+    // Ensure signature column exists
+    try {
+      await pool.query('ALTER TABLE virtual_users ADD COLUMN signature LONGTEXT NULL');
+    } catch (e) {}
+
+    const updates: string[] = [];
+    const params: any[] = [];
+
+    if (fullName !== undefined) {
+      updates.push('full_name = ?');
+      params.push(fullName);
+    }
+    if (signature !== undefined) {
+      updates.push('signature = ?');
+      params.push(signature);
+    }
+    if (quotaMb !== undefined) {
+      updates.push('quota_mb = ?');
+      params.push(Number(quotaMb));
+    }
+    if (password && password.trim()) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password.trim(), salt);
+      updates.push('password = ?');
+      params.push(`{BLF-CRYPT}${hashedPassword}`);
+    }
+
+    if (updates.length === 0) {
+      return NextResponse.json({ success: false, message: 'No fields to update' }, { status: 400 });
+    }
+
+    params.push(mailboxId);
+    await pool.query(`UPDATE virtual_users SET ${updates.join(', ')} WHERE id = ?`, params);
+
+    return NextResponse.json({ success: true, message: 'Mailbox configuration and signature updated successfully!' });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }

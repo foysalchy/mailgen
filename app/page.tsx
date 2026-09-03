@@ -167,7 +167,9 @@ export default function MailboxApp() {
   const [mailboxes, setMailboxes] = useState<any[]>([]);
   const [selectedMailbox, setSelectedMailbox] = useState<any>(null);
   const [newMailboxModal, setNewMailboxModal] = useState(false);
-  const [newMailboxData, setNewMailboxData] = useState({ username: '', password: '', fullName: '', domainId: '' });
+  const [newMailboxData, setNewMailboxData] = useState({ username: '', password: '', fullName: '', signature: '', quotaMb: 2048, domainId: '' });
+  const [editMailboxModal, setEditMailboxModal] = useState<any>(null);
+  const [editMailboxForm, setEditMailboxForm] = useState({ fullName: '', signature: '', quotaMb: 2048, password: '' });
 
   // Webmail state
   const [currentFolder, setCurrentFolder] = useState<string>('inbox');
@@ -1577,7 +1579,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
       const data = await res.json();
       if (data.success) {
         setNewMailboxModal(false);
-        setNewMailboxData({ username: '', password: '', fullName: '', domainId: domains[0]?.id?.toString() || '' });
+        setNewMailboxData({ username: '', password: '', fullName: '', signature: '', quotaMb: 2048, domainId: domains[0]?.id?.toString() || '' });
         fetchMailboxes(currentUser.id);
         toast.success(`Success! Created mailbox: ${data.mailbox.email}`);
       } else {
@@ -1585,6 +1587,35 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
       }
     } catch (err: any) {
       toast.error(err.message || 'Error creating mailbox');
+    }
+  };
+
+  const handleUpdateMailbox = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editMailboxModal?.id) return;
+
+    try {
+      const res = await fetch('/api/mailboxes', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mailboxId: editMailboxModal.id,
+          fullName: editMailboxForm.fullName,
+          signature: editMailboxForm.signature,
+          quotaMb: editMailboxForm.quotaMb,
+          password: editMailboxForm.password || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEditMailboxModal(null);
+        if (currentUser?.id) fetchMailboxes(currentUser.id, currentUser.company_id);
+        toast.success(data.message || 'Mailbox quota and signature updated!');
+      } else {
+        toast.error(data.message || 'Failed to update mailbox');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error updating mailbox');
     }
   };
 
@@ -2560,6 +2591,19 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                       setActiveTab('mailboxes');
                       return;
                     }
+                    const activeBox = selectedMailbox || mailboxes[0];
+                    const activeSignature = activeBox?.signature || companySettingsForm.emailSignature || '';
+                    const defaultFooter = companySettingsForm.emailFooter ? `\n\n---\n${companySettingsForm.emailFooter}` : '';
+                    
+                    if (activeSignature || defaultFooter) {
+                      const initialBodyText = `\n\n${activeSignature}${defaultFooter}`;
+                      const initialBodyHtml = `<br/><br/><div style="color: #64748b; font-size: 13px; font-family: sans-serif; border-top: 1px solid #cbd5e1; padding-top: 8px;">${activeSignature.replace(/\n/g, '<br/>')}${companySettingsForm.emailFooter ? `<div style="font-size: 11px; color: #94a3b8; margin-top: 8px;">${companySettingsForm.emailFooter.replace(/\n/g, '<br/>')}</div>` : ''}</div>`;
+                      setComposeData((prev) => ({
+                        ...prev,
+                        bodyText: prev.bodyText || initialBodyText,
+                        bodyHtml: prev.bodyHtml || initialBodyHtml,
+                      }));
+                    }
                     setComposeModal(true);
                   }}
                   className="w-full mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium py-2.5 px-4 rounded-xl shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 transition-all"
@@ -3345,22 +3389,43 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                           <span>{mb.email}</span>
                         </td>
                         <td className="p-4">{mb.full_name || '-'}</td>
-                        <td className="p-4">{mb.quota_mb} MB</td>
+                        <td className="p-4">
+                          <span className="font-semibold text-white">{(mb.quota_mb / 1024).toFixed(1)} GB</span>
+                          <span className="text-[11px] text-slate-400 block font-mono">({mb.quota_mb} MB)</span>
+                        </td>
                         <td className="p-4">
                           <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
                             Active
                           </span>
                         </td>
                         <td className="p-4">
-                          <button
-                            onClick={() => {
-                              setSelectedMailbox(mb);
-                              setActiveTab('webmail');
-                            }}
-                            className="px-3 py-1 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/20 text-xs rounded font-medium transition-colors"
-                          >
-                            Open Webmail
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setSelectedMailbox(mb);
+                                setActiveTab('webmail');
+                              }}
+                              className="px-3 py-1 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/20 text-xs rounded font-medium transition-colors"
+                            >
+                              Open Webmail
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditMailboxModal(mb);
+                                setEditMailboxForm({
+                                  fullName: mb.full_name || '',
+                                  signature: mb.signature || '',
+                                  quotaMb: mb.quota_mb || 2048,
+                                  password: '',
+                                });
+                              }}
+                              title="Edit Storage Quota & Signature"
+                              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded border border-slate-700 text-xs transition-colors flex items-center gap-1"
+                            >
+                              <Settings2 className="w-3.5 h-3.5" />
+                              <span className="text-[11px]">Edit / Space</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -5428,12 +5493,149 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 />
               </div>
 
+              {/* STORAGE QUOTA ALLOCATION */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-amber-300">
+                    💾 Storage Space Allocation
+                  </label>
+                  <span className="text-[10px] text-slate-400">Total company package available</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={newMailboxData.quotaMb}
+                    onChange={(e) => setNewMailboxData({ ...newMailboxData, quotaMb: Number(e.target.value) })}
+                    className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                  >
+                    <option value={1024}>1 GB (1024 MB)</option>
+                    <option value={2048}>2 GB (2048 MB) - Default</option>
+                    <option value={5120}>5 GB (5120 MB)</option>
+                    <option value={10240}>10 GB (10240 MB)</option>
+                    <option value={20480}>20 GB (20480 MB)</option>
+                    <option value={51200}>50 GB (51200 MB)</option>
+                  </select>
+                  <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg px-3 py-1 text-xs text-slate-300">
+                    <span className="font-mono text-emerald-400 font-bold mr-1">{(newMailboxData.quotaMb / 1024).toFixed(1)}</span> GB allocated
+                  </div>
+                </div>
+              </div>
+
+              {/* INDIVIDUAL USER SIGNATURE */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-indigo-300">
+                    ✍️ User Individual Signature (Optional)
+                  </label>
+                  <span className="text-[10px] text-slate-400">Specific to this user</span>
+                </div>
+                <textarea
+                  rows={2}
+                  placeholder="Best regards,&#10;Foysal Ahmed | Senior Developer&#10;Direct: +880 1700-000000"
+                  value={newMailboxData.signature}
+                  onChange={(e) => setNewMailboxData({ ...newMailboxData, signature: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-500 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-800">
                 <button type="button" onClick={() => setNewMailboxModal(false)} className="px-4 py-2 text-xs font-medium text-slate-400">
                   Cancel
                 </button>
                 <button type="submit" className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white rounded-lg">
                   Create Mailbox
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===================== MODAL: EDIT MAILBOX (QUOTA & SIGNATURE) ===================== */}
+      {editMailboxModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-6">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+              <h3 className="text-base font-bold text-white">Edit Mailbox Settings & Signature</h3>
+              <button onClick={() => setEditMailboxModal(null)} className="text-slate-400 hover:text-white text-sm">✕</button>
+            </div>
+            <form onSubmit={handleUpdateMailbox} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">Mailbox Address</label>
+                <input
+                  type="text"
+                  disabled
+                  value={editMailboxModal.email}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-400 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">Full Name</label>
+                <input
+                  type="text"
+                  value={editMailboxForm.fullName}
+                  onChange={(e) => setEditMailboxForm({ ...editMailboxForm, fullName: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                />
+              </div>
+
+              {/* STORAGE QUOTA ALLOCATION */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-amber-300">
+                    💾 Allocated Cloud Storage (GB)
+                  </label>
+                  <span className="text-[10px] text-slate-400">Adjust disk quota</span>
+                </div>
+                <select
+                  value={editMailboxForm.quotaMb}
+                  onChange={(e) => setEditMailboxForm({ ...editMailboxForm, quotaMb: Number(e.target.value) })}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                >
+                  <option value={512}>512 MB (0.5 GB)</option>
+                  <option value={1024}>1 GB (1024 MB)</option>
+                  <option value={2048}>2 GB (2048 MB)</option>
+                  <option value={5120}>5 GB (5120 MB)</option>
+                  <option value={10240}>10 GB (10240 MB)</option>
+                  <option value={20480}>20 GB (20480 MB)</option>
+                  <option value={51200}>50 GB (51200 MB)</option>
+                </select>
+              </div>
+
+              {/* INDIVIDUAL USER SIGNATURE */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-indigo-300">
+                    ✍️ Individual Email Signature
+                  </label>
+                  <span className="text-[10px] text-slate-400">Custom user signature</span>
+                </div>
+                <textarea
+                  rows={3}
+                  placeholder="Best regards,&#10;Name | Title&#10;Direct: +880 1700-000000"
+                  value={editMailboxForm.signature}
+                  onChange={(e) => setEditMailboxForm({ ...editMailboxForm, signature: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-500 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">New Password (Leave blank to keep unchanged)</label>
+                <input
+                  type="password"
+                  placeholder="Set new mailbox password"
+                  value={editMailboxForm.password}
+                  onChange={(e) => setEditMailboxForm({ ...editMailboxForm, password: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-800">
+                <button type="button" onClick={() => setEditMailboxModal(null)} className="px-4 py-2 text-xs font-medium text-slate-400">
+                  Cancel
+                </button>
+                <button type="submit" className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white rounded-lg">
+                  Save Changes
                 </button>
               </div>
             </form>

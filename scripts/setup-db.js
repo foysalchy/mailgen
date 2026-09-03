@@ -118,11 +118,16 @@ async function run() {
         quota_mb INT DEFAULT 2048,
         is_active BOOLEAN DEFAULT TRUE,
         full_name VARCHAR(150) DEFAULT '',
+        signature LONGTEXT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (domain_id) REFERENCES virtual_domains(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       ) ENGINE=InnoDB;
     `);
+
+    try {
+      await connection.query('ALTER TABLE virtual_users ADD COLUMN signature LONGTEXT NULL AFTER full_name');
+    } catch (e) {}
 
     // 5. Virtual Aliases & Forwarders Table
     await connection.query(`
