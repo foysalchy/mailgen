@@ -27,14 +27,38 @@ export async function POST(request: Request) {
       [cleanEmail]
     );
 
-    if (rows.length === 0) {
+    let user = rows[0];
+    let isMailboxUser = false;
+
+    // If not found in users table, check virtual_users (Mailbox Account direct login)
+    if (!user) {
+      const [vRows]: any = await pool.query(
+        `SELECT v.id, v.company_id, v.full_name as name, v.email, v.password as password_hash,
+                'mailbox_user' as role, IF(v.is_active, 'active', 'suspended') as user_status,
+                v.signature, v.quota_mb,
+                c.name as company_name, c.status as company_status,
+                p.name as plan_name, p.max_domains, p.max_mailboxes, p.storage_quota_mb
+         FROM virtual_users v
+         LEFT JOIN companies c ON v.company_id = c.id
+         LEFT JOIN plans p ON c.plan_id = p.id
+         WHERE v.email = ?`,
+        [cleanEmail]
+      );
+
+      if (vRows.length > 0) {
+        user = vRows[0];
+        isMailboxUser = true;
+      }
+    }
+
+    if (!user) {
       return NextResponse.json({ success: false, message: 'Invalid email or password' }, { status: 401 });
     }
 
-    const user = rows[0];
-
-    // Password verification
-    const isMatch = await bcrypt.compare(password, user.password_hash).catch(() => false) || user.password_hash === password;
+    // Password verification (supports bcrypt and Dovecot {BLF-CRYPT} prefixes)
+    const rawHash = user.password_hash || '';
+    const cleanHash = rawHash.replace(/^\{BLF-CRYPT\}/i, '');
+    const isMatch = await bcrypt.compare(password, cleanHash).catch(() => false) || rawHash === password || cleanHash === password;
     if (!isMatch) {
       return NextResponse.json({ success: false, message: 'Invalid email or password' }, { status: 401 });
     }

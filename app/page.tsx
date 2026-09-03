@@ -913,6 +913,16 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
       if (data.success) {
         localStorage.setItem('mailbox_user', JSON.stringify(data.user));
         setCurrentUser(data.user);
+        if (data.user.role === 'mailbox_user') {
+          setSelectedMailbox({
+            id: data.user.id,
+            email: data.user.email,
+            full_name: data.user.name,
+            signature: data.user.signature,
+            quota_mb: data.user.quota_mb,
+          });
+          setActiveTab('webmail');
+        }
       } else {
         setAuthError(data.message);
       }
@@ -5601,13 +5611,15 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 />
               </div>
 
-              {/* STORAGE QUOTA ALLOCATION */}
+              {/* STORAGE QUOTA ALLOCATION (DYNAMICALLY CAPPED TO COMPANY PLAN LIMIT) */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-semibold text-amber-300">
                     💾 Storage Space Allocation
                   </label>
-                  <span className="text-[10px] text-slate-400">Total company package available</span>
+                  <span className="text-[10px] text-slate-400">
+                    Package Max: {(currentUser?.storage_quota_mb ? currentUser.storage_quota_mb / 1024 : 10).toFixed(0)} GB ({currentUser?.storage_quota_mb || 10240} MB)
+                  </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <select
@@ -5615,12 +5627,13 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     onChange={(e) => setNewMailboxData({ ...newMailboxData, quotaMb: Number(e.target.value) })}
                     className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
                   >
-                    <option value={1024}>1 GB (1024 MB)</option>
-                    <option value={2048}>2 GB (2048 MB) - Default</option>
-                    <option value={5120}>5 GB (5120 MB)</option>
-                    <option value={10240}>10 GB (10240 MB)</option>
-                    <option value={20480}>20 GB (20480 MB)</option>
-                    <option value={51200}>50 GB (51200 MB)</option>
+                    {[512, 1024, 2048, 5120, 10240, 20480, 51200]
+                      .filter((mb) => mb <= (currentUser?.storage_quota_mb || 10240))
+                      .map((mb) => (
+                        <option key={mb} value={mb}>
+                          {mb >= 1024 ? `${(mb / 1024).toFixed(0)} GB (${mb} MB)` : `${mb} MB`}
+                        </option>
+                      ))}
                   </select>
                   <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg px-3 py-1 text-xs text-slate-300">
                     <span className="font-mono text-emerald-400 font-bold mr-1">{(newMailboxData.quotaMb / 1024).toFixed(1)}</span> GB allocated
@@ -5687,26 +5700,28 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 />
               </div>
 
-              {/* STORAGE QUOTA ALLOCATION */}
+              {/* STORAGE QUOTA ALLOCATION (DYNAMICALLY CAPPED TO COMPANY PLAN LIMIT) */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-semibold text-amber-300">
                     💾 Allocated Cloud Storage (GB)
                   </label>
-                  <span className="text-[10px] text-slate-400">Adjust disk quota</span>
+                  <span className="text-[10px] text-slate-400">
+                    Max: {(currentUser?.storage_quota_mb ? currentUser.storage_quota_mb / 1024 : 10).toFixed(0)} GB
+                  </span>
                 </div>
                 <select
                   value={editMailboxForm.quotaMb}
                   onChange={(e) => setEditMailboxForm({ ...editMailboxForm, quotaMb: Number(e.target.value) })}
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
                 >
-                  <option value={512}>512 MB (0.5 GB)</option>
-                  <option value={1024}>1 GB (1024 MB)</option>
-                  <option value={2048}>2 GB (2048 MB)</option>
-                  <option value={5120}>5 GB (5120 MB)</option>
-                  <option value={10240}>10 GB (10240 MB)</option>
-                  <option value={20480}>20 GB (20480 MB)</option>
-                  <option value={51200}>50 GB (51200 MB)</option>
+                  {[512, 1024, 2048, 5120, 10240, 20480, 51200]
+                    .filter((mb) => mb <= (currentUser?.storage_quota_mb || 10240))
+                    .map((mb) => (
+                      <option key={mb} value={mb}>
+                        {mb >= 1024 ? `${(mb / 1024).toFixed(0)} GB (${mb} MB)` : `${mb} MB`}
+                      </option>
+                    ))}
                 </select>
               </div>
 
