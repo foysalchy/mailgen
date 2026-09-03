@@ -35,8 +35,6 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y \
   dovecot-pop3d \
   dovecot-lmtpd \
   dovecot-mysql \
-  opendkim \
-  opendkim-tools \
   certbot \
   ufw
 
@@ -124,29 +122,8 @@ sudo chmod 600 /etc/dovecot/dovecot-sql.conf.ext
 # Ensure script permissions
 sudo chmod 755 /var/www/html/mailbox/scripts/pipe-delivery.js 2>/dev/null || true
 
-# 8. Configure OpenDKIM Milter
-echo "[8/9] Configuring OpenDKIM cryptographic signature milter..."
-sudo tee /etc/opendkim.conf > /dev/null <<'EOF'
-AutoRestart             Yes
-AutoRestartRate         10/1h
-UMask                   002
-Syslog                  yes
-SyslogSuccess           Yes
-LogWhy                  Yes
-Canonicalization        relaxed/simple
-Mode                    sv
-SubDomains              no
-OversignHeaders         From
-Socket                  inet:8891@127.0.0.1
-EOF
-
-sudo postconf -e "milter_default_action = accept"
-sudo postconf -e "milter_protocol = 6"
-sudo postconf -e "smtpd_milters = inet:127.0.0.1:8891"
-sudo postconf -e "non_smtpd_milters = inet:127.0.0.1:8891"
-
-# 9. Firewall Configuration (UFW)
-echo "[9/9] Configuring firewall rules (SSH, HTTP, HTTPS, SMTP, IMAP)..."
+# 8. Firewall Configuration (UFW)
+echo "[8/8] Configuring firewall rules (SSH, HTTP, HTTPS, SMTP, IMAP)..."
 sudo ufw allow OpenSSH
 sudo ufw allow 'Nginx Full' 2>/dev/null || true
 sudo ufw allow 'Apache Full' 2>/dev/null || true
@@ -158,7 +135,6 @@ sudo ufw allow 995/tcp   # POP3S
 sudo ufw --force enable
 
 # Restart services
-sudo systemctl restart opendkim || true
 sudo systemctl restart postfix || true
 sudo systemctl restart dovecot || true
 

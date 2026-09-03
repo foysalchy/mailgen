@@ -29,7 +29,7 @@ cd /var/www/html/mailbox
 ```
 
 ### 2️⃣ Run Automated VPS Mail Engine Setup
-This script automatically installs Postfix, Dovecot, OpenDKIM, Node.js 20, PM2, UFW firewall rules, and configures the incoming pipe delivery daemon:
+This script automatically installs Postfix (MTA), Dovecot (IMAP/POP3), Node.js 20, PM2, UFW firewall rules, and configures the incoming pipe delivery daemon:
 ```bash
 chmod +x scripts/vps-mailserver-setup.sh
 sudo ./scripts/vps-mailserver-setup.sh
