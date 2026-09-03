@@ -3035,46 +3035,122 @@ export default function MailboxApp() {
 
                     {selectedDomainDns?.id === dom.id && (
                       <div className="mt-5 pt-5 border-t border-slate-800/80">
-                        <h4 className="text-xs uppercase font-semibold text-slate-400 tracking-wider mb-3">
-                          Required DNS Records for {dom.name}
-                        </h4>
-                        <div className="overflow-x-auto">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                              <span>Required DNS Setup Guide for</span>
+                              <span className="text-blue-400 font-mono underline">{dom.name}</span>
+                            </h4>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              Add these records at your DNS provider (Cloudflare, Namecheap, cPanel). <strong>No need to change your main website IP!</strong>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/60 p-1">
                           <table className="w-full text-xs text-left">
-                            <thead className="bg-slate-950 text-slate-400">
+                            <thead className="bg-slate-900 text-slate-400 font-semibold border-b border-slate-800">
                               <tr>
-                                <th className="p-2.5 rounded-l">Type</th>
-                                <th className="p-2.5">Host</th>
-                                <th className="p-2.5">Value</th>
-                                <th className="p-2.5 rounded-r">Priority</th>
+                                <th className="p-3">Record Type</th>
+                                <th className="p-3">Host / Name</th>
+                                <th className="p-3">Target / Value</th>
+                                <th className="p-3">Priority / TTL</th>
+                                <th className="p-3 text-right">Action</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-800 font-mono text-slate-300">
-                              <tr>
-                                <td className="p-2.5 text-blue-400 font-bold">MX</td>
-                                <td className="p-2.5">@</td>
-                                <td className="p-2.5">mail.yourdomain.com.</td>
-                                <td className="p-2.5">10</td>
+                            <tbody className="divide-y divide-slate-800/80 font-mono text-slate-300">
+                              {/* MX Record */}
+                              <tr className="hover:bg-slate-900/50 transition-colors">
+                                <td className="p-3 text-blue-400 font-bold">MX</td>
+                                <td className="p-3">@</td>
+                                <td className="p-3 font-semibold text-white">mail.kidukart.com</td>
+                                <td className="p-3">Priority: <strong className="text-amber-400">10</strong></td>
+                                <td className="p-3 text-right font-sans">
+                                  <button
+                                    onClick={() => {
+                                      navigator.clipboard.writeText('mail.kidukart.com');
+                                      toast.success('MX target copied!');
+                                    }}
+                                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] rounded font-medium inline-flex items-center gap-1"
+                                  >
+                                    <Copy className="w-3 h-3" /> Copy
+                                  </button>
+                                </td>
                               </tr>
-                              <tr>
-                                <td className="p-2.5 text-emerald-400 font-bold">TXT (SPF)</td>
-                                <td className="p-2.5">@</td>
-                                <td className="p-2.5">v=spf1 mx a:mail.yourdomain.com ~all</td>
-                                <td className="p-2.5">-</td>
+
+                              {/* SPF Record */}
+                              <tr className="hover:bg-slate-900/50 transition-colors">
+                                <td className="p-3 text-emerald-400 font-bold">TXT (SPF)</td>
+                                <td className="p-3">@</td>
+                                <td className="p-3 text-emerald-300">v=spf1 ip4:62.72.12.195 ~all</td>
+                                <td className="p-3 text-slate-400">Auto</td>
+                                <td className="p-3 text-right font-sans">
+                                  <button
+                                    onClick={() => {
+                                      navigator.clipboard.writeText('v=spf1 ip4:62.72.12.195 ~all');
+                                      toast.success('SPF record copied!');
+                                    }}
+                                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] rounded font-medium inline-flex items-center gap-1"
+                                  >
+                                    <Copy className="w-3 h-3" /> Copy
+                                  </button>
+                                </td>
                               </tr>
-                              <tr>
-                                <td className="p-2.5 text-purple-400 font-bold">TXT (DKIM)</td>
-                                <td className="p-2.5">mail._domainkey</td>
-                                <td className="p-2.5 truncate max-w-xs">v=DKIM1; k=rsa; p=...</td>
-                                <td className="p-2.5">-</td>
+
+                              {/* DKIM Record */}
+                              <tr className="hover:bg-slate-900/50 transition-colors">
+                                <td className="p-3 text-purple-400 font-bold">TXT (DKIM)</td>
+                                <td className="p-3">mail._domainkey</td>
+                                <td className="p-3 truncate max-w-xs text-purple-300">
+                                  {dom.dkim_public_key ? `v=DKIM1; k=rsa; p=${dom.dkim_public_key.replace(/-----[^\n]+-----|\n|\r/g, '').trim()}` : 'v=DKIM1; k=rsa; p=...'}
+                                </td>
+                                <td className="p-3 text-slate-400">Auto</td>
+                                <td className="p-3 text-right font-sans">
+                                  <button
+                                    onClick={() => {
+                                      const dkimVal = dom.dkim_public_key
+                                        ? `v=DKIM1; k=rsa; p=${dom.dkim_public_key.replace(/-----[^\n]+-----|\n|\r/g, '').trim()}`
+                                        : 'v=DKIM1; k=rsa; p=...';
+                                      navigator.clipboard.writeText(dkimVal);
+                                      toast.success('DKIM record copied!');
+                                    }}
+                                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] rounded font-medium inline-flex items-center gap-1"
+                                  >
+                                    <Copy className="w-3 h-3" /> Copy
+                                  </button>
+                                </td>
                               </tr>
-                              <tr>
-                                <td className="p-2.5 text-amber-400 font-bold">TXT (DMARC)</td>
-                                <td className="p-2.5">_dmarc</td>
-                                <td className="p-2.5">v=DMARC1; p=quarantine;</td>
-                                <td className="p-2.5">-</td>
+
+                              {/* DMARC Record */}
+                              <tr className="hover:bg-slate-900/50 transition-colors">
+                                <td className="p-3 text-amber-400 font-bold">TXT (DMARC)</td>
+                                <td className="p-3">_dmarc</td>
+                                <td className="p-3 text-amber-300">v=DMARC1; p=none; sp=none;</td>
+                                <td className="p-3 text-slate-400">Auto</td>
+                                <td className="p-3 text-right font-sans">
+                                  <button
+                                    onClick={() => {
+                                      navigator.clipboard.writeText('v=DMARC1; p=none; sp=none;');
+                                      toast.success('DMARC record copied!');
+                                    }}
+                                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] rounded font-medium inline-flex items-center gap-1"
+                                  >
+                                    <Copy className="w-3 h-3" /> Copy
+                                  </button>
+                                </td>
                               </tr>
                             </tbody>
                           </table>
+                        </div>
+
+                        <div className="mt-3 p-3 bg-blue-950/30 border border-blue-500/20 rounded-xl text-xs text-slate-300 leading-relaxed">
+                          <p className="flex items-center gap-1.5 font-semibold text-blue-400 mb-1">
+                            <span>💡 Cloudflare Setup Tip:</span>
+                          </p>
+                          <p>
+                            • Set <strong>Proxy status</strong> to <strong>DNS Only (Gray Cloud ☁️)</strong> for MX and TXT records.<br/>
+                            • Your main website (A or CNAME record) does NOT need to be changed and can stay on Vercel/Shopify/etc.
+                          </p>
                         </div>
                       </div>
                     )}
