@@ -84,15 +84,29 @@ sudo chmod 640 /etc/postfix/mysql-virtual-*.cf
 sudo chgrp postfix /etc/postfix/mysql-virtual-*.cf
 
 # Main Postfix config
+sudo sed -i '/virtual_transport/d' /etc/postfix/main.cf 2>/dev/null || true
+sudo sed -i '/virtual_mailbox_domains/d' /etc/postfix/main.cf 2>/dev/null || true
+sudo sed -i '/virtual_mailbox_maps/d' /etc/postfix/main.cf 2>/dev/null || true
+
 sudo tee -a /etc/postfix/main.cf > /dev/null <<EOF
 
-# MailBox Pro Virtual Mailbox Settings
+# MailBox Pro Virtual Mailbox & Pipe Settings
 myhostname = ${MAIL_HOSTNAME}
 mydestination = localhost
 virtual_mailbox_domains = mysql:/etc/postfix/mysql-virtual-mailbox-domains.cf
 virtual_mailbox_maps = mysql:/etc/postfix/mysql-virtual-mailbox-maps.cf
-virtual_transport = lmtp:unix:private/dovecot-lmtp
+virtual_transport = mailbox-pipe
+mailbox-pipe_destination_recipient_limit = 1
 smtputf8_enable = no
+EOF
+
+# Configure Pipe Delivery in master.cf
+sudo sed -i '/mailbox-pipe/d' /etc/postfix/master.cf 2>/dev/null || true
+sudo tee -a /etc/postfix/master.cf > /dev/null <<'EOF'
+
+# MailBox Pro Pipe Delivery Agent
+mailbox-pipe  unix  -       n       n       -       -       pipe
+  flags=Fq user=www-data argv=/usr/bin/node /var/www/html/mailbox/scripts/pipe-delivery.js ${recipient}
 EOF
 
 # 7. Configure Dovecot for MySQL Auth & Storage
@@ -107,10 +121,14 @@ EOF
 
 sudo chmod 600 /etc/dovecot/dovecot-sql.conf.ext
 
+# Ensure script permissions
+sudo chmod 755 /var/www/html/mailbox/scripts/pipe-delivery.js 2>/dev/null || true
+
 # 8. Firewall Configuration (UFW)
 echo "[8/8] Configuring firewall rules (SSH, HTTP, HTTPS, SMTP, IMAP)..."
 sudo ufw allow OpenSSH
-sudo ufw allow 'Nginx Full'
+sudo ufw allow 'Nginx Full' 2>/dev/null || true
+sudo ufw allow 'Apache Full' 2>/dev/null || true
 sudo ufw allow 25/tcp    # SMTP
 sudo ufw allow 465/tcp   # SMTPS
 sudo ufw allow 587/tcp   # Submission
@@ -119,10 +137,8 @@ sudo ufw allow 995/tcp   # POP3S
 sudo ufw --force enable
 
 # Restart services
-sudo systemctl restart mariadb || true
 sudo systemctl restart postfix || true
 sudo systemctl restart dovecot || true
-sudo systemctl restart nginx || sudo systemctl restart apache2 || true
 
 echo "====================================================================="
 echo "   VPS Environment Setup Completed Successfully!"
