@@ -25,9 +25,23 @@ async function ensureApiKeysTable() {
 
   try {
     await pool.query('ALTER TABLE api_keys ADD COLUMN company_id INT NULL AFTER user_id');
-  } catch (e) {
-    // Column already exists
-  }
+  } catch (e) {}
+
+  try {
+    await pool.query('ALTER TABLE api_keys ADD COLUMN sender_email VARCHAR(255) NULL AFTER api_key');
+  } catch (e) {}
+
+  try {
+    await pool.query('ALTER TABLE api_keys ADD COLUMN allowed_origins TEXT NULL AFTER sender_email');
+  } catch (e) {}
+
+  try {
+    await pool.query('ALTER TABLE api_keys ADD COLUMN total_requests INT DEFAULT 0 AFTER status');
+  } catch (e) {}
+
+  try {
+    await pool.query('ALTER TABLE api_keys ADD COLUMN last_used_at TIMESTAMP NULL AFTER total_requests');
+  } catch (e) {}
 }
 
 // GET: Retrieve all API keys for the current user or company
