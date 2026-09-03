@@ -1,11 +1,14 @@
 const mysql = require('mysql2/promise');
 
+require('dotenv').config({ path: '.env.local' });
+require('dotenv').config();
+
 async function run() {
   const connection = await mysql.createConnection({
-    host: '127.0.0.1',
-    user: 'root',
-    password: '',
-    port: 3306,
+    host: process.env.DB_HOST || '127.0.0.1',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : '',
+    port: Number(process.env.DB_PORT) || 3306,
   });
 
   try {
