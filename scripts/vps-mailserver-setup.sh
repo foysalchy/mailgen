@@ -85,10 +85,12 @@ sudo chgrp postfix /etc/postfix/mysql-virtual-*.cf
 sudo sed -i '/virtual_transport/d' /etc/postfix/main.cf 2>/dev/null || true
 sudo sed -i '/virtual_mailbox_domains/d' /etc/postfix/main.cf 2>/dev/null || true
 sudo sed -i '/virtual_mailbox_maps/d' /etc/postfix/main.cf 2>/dev/null || true
+sudo sed -i '/inet_protocols/d' /etc/postfix/main.cf 2>/dev/null || true
+sudo sed -i '/smtp_address_preference/d' /etc/postfix/main.cf 2>/dev/null || true
 
 sudo tee -a /etc/postfix/main.cf > /dev/null <<EOF
 
-# MailBox Pro Virtual Mailbox & Pipe Settings
+# MailBox Pro Virtual Mailbox & Delivery Settings
 myhostname = ${MAIL_HOSTNAME}
 mydestination = localhost
 virtual_mailbox_domains = mysql:/etc/postfix/mysql-virtual-mailbox-domains.cf
@@ -96,6 +98,8 @@ virtual_mailbox_maps = mysql:/etc/postfix/mysql-virtual-mailbox-maps.cf
 virtual_transport = mailbox-pipe
 mailbox-pipe_destination_recipient_limit = 1
 smtputf8_enable = no
+inet_protocols = ipv4
+smtp_address_preference = ipv4
 EOF
 
 # Configure Pipe Delivery in master.cf

@@ -190,9 +190,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'Missing required mail fields' }, { status: 400 });
       }
 
-      // Check sender mailbox
+      // Check sender mailbox and domain DKIM credentials
       const [rows]: any = await pool.query(
-        `SELECT u.*, d.name as domain_name FROM virtual_users u
+        `SELECT u.*, d.name as domain_name, d.dkim_selector, d.dkim_private_key FROM virtual_users u
          JOIN virtual_domains d ON u.domain_id = d.id
          WHERE u.id = ?`,
         [mailboxId]
@@ -234,16 +234,27 @@ export async function POST(request: Request) {
           await pool.query('UPDATE companies SET month_sent_count = month_sent_count + 1 WHERE id = ?', [senderMailbox.company_id]);
         }
 
-        // 1. Dispatch real email to external world (Gmail, Yahoo, Outlook, etc.) via local Postfix
+        // 1. Dispatch real email to external world (Gmail, Yahoo, Outlook, etc.) via local Postfix with DKIM Signature
         try {
-          const transporter = nodemailer.createTransport({
+          const transportOptions: any = {
             host: '127.0.0.1',
             port: 25,
             secure: false,
             tls: {
               rejectUnauthorized: false,
             },
-          });
+          };
+
+          // Attach DKIM signing if domain has DKIM keys configured
+          if (senderMailbox.dkim_private_key && senderMailbox.domain_name) {
+            transportOptions.dkim = {
+              domainName: senderMailbox.domain_name,
+              keySelector: senderMailbox.dkim_selector || 'mail',
+              privateKey: senderMailbox.dkim_private_key,
+            };
+          }
+
+          const transporter = nodemailer.createTransport(transportOptions);
 
           await transporter.sendMail({
             from: `"${senderMailbox.full_name || senderMailbox.email}" <${senderMailbox.email}>`,

@@ -169,9 +169,9 @@ export async function POST(request: Request) {
       senderEmail = userBoxes[0].email;
     }
 
-    // 5. Verify sender email belongs to user or company
+    // 5. Verify sender address belongs to user's domain and fetch DKIM keys
     const [senderBox]: any = await pool.query(
-      `SELECT u.id, u.email, u.full_name, u.company_id, d.name as domain_name
+      `SELECT u.*, d.name as domain_name, d.dkim_selector, d.dkim_private_key
        FROM virtual_users u
        JOIN virtual_domains d ON u.domain_id = d.id
        WHERE u.email = ? AND (u.user_id = ? OR (u.company_id = ? AND u.company_id IS NOT NULL))`,
@@ -213,16 +213,26 @@ export async function POST(request: Request) {
       await pool.query('UPDATE companies SET month_sent_count = month_sent_count + 1 WHERE id = ?', [mailbox.company_id]);
     }
 
-    // 8. Deliver via local Postfix SMTP to external destinations (Gmail, Yahoo, Outlook, etc.)
+    // 8. Deliver via local Postfix SMTP to external destinations (Gmail, Yahoo, Outlook, etc.) with DKIM
     try {
-      const transporter = nodemailer.createTransport({
+      const transportOptions: any = {
         host: '127.0.0.1',
         port: 25,
         secure: false,
         tls: {
           rejectUnauthorized: false,
         },
-      });
+      };
+
+      if (mailbox.dkim_private_key && mailbox.domain_name) {
+        transportOptions.dkim = {
+          domainName: mailbox.domain_name,
+          keySelector: mailbox.dkim_selector || 'mail',
+          privateKey: mailbox.dkim_private_key,
+        };
+      }
+
+      const transporter = nodemailer.createTransport(transportOptions);
 
       await transporter.sendMail({
         from: `"${from && from.includes('<') ? from.split('<')[0].trim() : mailbox.full_name || mailbox.email}" <${mailbox.email}>`,
