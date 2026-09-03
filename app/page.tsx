@@ -4707,10 +4707,25 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
             {/* Window Body (hidden if minimized) */}
             {!isComposeMinimized && (
-              <form onSubmit={handleSendMessage} className="p-3 space-y-2 flex-1 flex flex-col overflow-y-auto bg-slate-900">
+              <form
+                onSubmit={handleSendMessage}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT') {
+                    // Prevent accidental form submit when typing recipient tags
+                    const inputElem = e.target as HTMLInputElement;
+                    if (inputElem.placeholder && inputElem.placeholder.includes('press Enter')) {
+                      e.preventDefault();
+                    }
+                  }
+                }}
+                className="p-3 space-y-2 flex-1 flex flex-col overflow-y-auto bg-slate-900"
+              >
                 {/* To Field with Interactive Tag Badges (Enter / Comma to add Tag) */}
-                <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-800 py-1.5 text-xs min-h-[36px]">
-                  <span className="text-slate-400 font-semibold w-8 shrink-0">To:</span>
+                <div
+                  onClick={() => document.getElementById('compose-to-input')?.focus()}
+                  className="flex flex-wrap items-center gap-1.5 border-b border-slate-800 py-1.5 text-xs min-h-[36px] cursor-text"
+                >
+                  <span className="text-slate-400 font-semibold w-8 shrink-0 select-none">To:</span>
                   
                   {composeData.toTags.map((tag, idx) => (
                     <span
@@ -4720,13 +4735,14 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                       <span>{tag}</span>
                       <button
                         type="button"
-                        onClick={() =>
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setComposeData((prev) => ({
                             ...prev,
                             toTags: prev.toTags.filter((_, i) => i !== idx),
-                          }))
-                        }
-                        className="text-blue-400 hover:text-white text-xs font-bold leading-none"
+                          }));
+                        }}
+                        className="text-blue-400 hover:text-white text-xs font-bold leading-none ml-0.5"
                       >
                         ×
                       </button>
@@ -4734,15 +4750,17 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   ))}
 
                   <input
+                    id="compose-to-input"
                     type="text"
                     placeholder={composeData.toTags.length === 0 ? "recipient@example.com (press Enter or Comma)..." : "Add more..."}
                     value={composeData.toInput}
                     onChange={(e) => setComposeData({ ...composeData, toInput: e.target.value })}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ',' || e.key === ';' || e.key === 'Tab') {
+                      if (e.key === 'Enter' || e.key === ',' || e.key === ';' || e.key === 'Tab' || e.key === ' ') {
                         if (composeData.toInput.trim()) {
                           e.preventDefault();
-                          const val = composeData.toInput.replace(/[,;]/g, '').trim();
+                          e.stopPropagation();
+                          const val = composeData.toInput.replace(/[,;\s]/g, '').trim();
                           if (val && !composeData.toTags.includes(val)) {
                             setComposeData((prev) => ({
                               ...prev,
@@ -4760,7 +4778,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     }}
                     onBlur={() => {
                       if (composeData.toInput.trim()) {
-                        const val = composeData.toInput.replace(/[,;]/g, '').trim();
+                        const val = composeData.toInput.replace(/[,;\s]/g, '').trim();
                         if (val && !composeData.toTags.includes(val)) {
                           setComposeData((prev) => ({
                             ...prev,
@@ -4789,8 +4807,11 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
                 {/* CC Field with Tag Badges */}
                 {showCc && (
-                  <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-800 py-1 text-xs min-h-[34px]">
-                    <span className="text-slate-400 font-semibold w-8 shrink-0">Cc:</span>
+                  <div
+                    onClick={() => document.getElementById('compose-cc-input')?.focus()}
+                    className="flex flex-wrap items-center gap-1.5 border-b border-slate-800 py-1 text-xs min-h-[34px] cursor-text"
+                  >
+                    <span className="text-slate-400 font-semibold w-8 shrink-0 select-none">Cc:</span>
 
                     {composeData.ccTags.map((tag, idx) => (
                       <span
@@ -4800,29 +4821,32 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                         <span>{tag}</span>
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setComposeData((prev) => ({
                               ...prev,
                               ccTags: prev.ccTags.filter((_, i) => i !== idx),
-                            }))
-                          }
-                          className="text-purple-400 hover:text-white text-xs font-bold leading-none"
+                            }));
+                          }}
+                          className="text-purple-400 hover:text-white text-xs font-bold leading-none ml-0.5"
                         >
                           ×
-                      </button>
-                    </span>
+                        </button>
+                      </span>
                     ))}
 
                     <input
+                      id="compose-cc-input"
                       type="text"
-                      placeholder="cc@example.com (press Enter)..."
+                      placeholder={composeData.ccTags.length === 0 ? "cc@example.com (press Enter)..." : "Add more Cc..."}
                       value={composeData.ccInput}
                       onChange={(e) => setComposeData({ ...composeData, ccInput: e.target.value })}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ',' || e.key === ';' || e.key === 'Tab') {
+                        if (e.key === 'Enter' || e.key === ',' || e.key === ';' || e.key === 'Tab' || e.key === ' ') {
                           if (composeData.ccInput.trim()) {
                             e.preventDefault();
-                            const val = composeData.ccInput.replace(/[,;]/g, '').trim();
+                            e.stopPropagation();
+                            const val = composeData.ccInput.replace(/[,;\s]/g, '').trim();
                             if (val && !composeData.ccTags.includes(val)) {
                               setComposeData((prev) => ({
                                 ...prev,
@@ -4840,7 +4864,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                       }}
                       onBlur={() => {
                         if (composeData.ccInput.trim()) {
-                          const val = composeData.ccInput.replace(/[,;]/g, '').trim();
+                          const val = composeData.ccInput.replace(/[,;\s]/g, '').trim();
                           if (val && !composeData.ccTags.includes(val)) {
                             setComposeData((prev) => ({
                               ...prev,
@@ -4858,8 +4882,11 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
                 {/* BCC Field with Tag Badges */}
                 {showBcc && (
-                  <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-800 py-1 text-xs min-h-[34px]">
-                    <span className="text-slate-400 font-semibold w-8 shrink-0">Bcc:</span>
+                  <div
+                    onClick={() => document.getElementById('compose-bcc-input')?.focus()}
+                    className="flex flex-wrap items-center gap-1.5 border-b border-slate-800 py-1 text-xs min-h-[34px] cursor-text"
+                  >
+                    <span className="text-slate-400 font-semibold w-8 shrink-0 select-none">Bcc:</span>
 
                     {composeData.bccTags.map((tag, idx) => (
                       <span
@@ -4869,29 +4896,32 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                         <span>{tag}</span>
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setComposeData((prev) => ({
                               ...prev,
                               bccTags: prev.bccTags.filter((_, i) => i !== idx),
-                            }))
-                          }
-                          className="text-emerald-400 hover:text-white text-xs font-bold leading-none"
+                            }));
+                          }}
+                          className="text-emerald-400 hover:text-white text-xs font-bold leading-none ml-0.5"
                         >
                           ×
-                      </button>
-                    </span>
+                        </button>
+                      </span>
                     ))}
 
                     <input
+                      id="compose-bcc-input"
                       type="text"
-                      placeholder="bcc@example.com (press Enter)..."
+                      placeholder={composeData.bccTags.length === 0 ? "bcc@example.com (press Enter)..." : "Add more Bcc..."}
                       value={composeData.bccInput}
                       onChange={(e) => setComposeData({ ...composeData, bccInput: e.target.value })}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ',' || e.key === ';' || e.key === 'Tab') {
+                        if (e.key === 'Enter' || e.key === ',' || e.key === ';' || e.key === 'Tab' || e.key === ' ') {
                           if (composeData.bccInput.trim()) {
                             e.preventDefault();
-                            const val = composeData.bccInput.replace(/[,;]/g, '').trim();
+                            e.stopPropagation();
+                            const val = composeData.bccInput.replace(/[,;\s]/g, '').trim();
                             if (val && !composeData.bccTags.includes(val)) {
                               setComposeData((prev) => ({
                                 ...prev,
@@ -4909,7 +4939,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                       }}
                       onBlur={() => {
                         if (composeData.bccInput.trim()) {
-                          const val = composeData.bccInput.replace(/[,;]/g, '').trim();
+                          const val = composeData.bccInput.replace(/[,;\s]/g, '').trim();
                           if (val && !composeData.bccTags.includes(val)) {
                             setComposeData((prev) => ({
                               ...prev,
