@@ -4657,25 +4657,25 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
             {/* Window Body (hidden if minimized) */}
             {!isComposeMinimized && (
               <form onSubmit={handleSendMessage} className="p-3 space-y-2 flex-1 flex flex-col overflow-y-auto bg-slate-900">
-                {/* To Field with CC & BCC */}
+                {/* To Field with CC & BCC (Supports Multiple Comma-Separated Emails) */}
                 <div className="flex items-center border-b border-slate-800 py-1.5 text-xs">
                   <span className="text-slate-400 font-semibold w-10">To:</span>
                   <input
-                    type="email"
+                    type="text"
                     required
-                    placeholder="recipient@example.com"
+                    placeholder="user1@example.com, user2@gmail.com..."
                     value={composeData.to}
                     onChange={(e) => setComposeData({ ...composeData, to: e.target.value })}
                     className="w-full bg-transparent text-white placeholder-slate-500 focus:outline-none text-xs"
                   />
-                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium">
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium shrink-0 ml-2">
                     {!showCc && (
-                      <button type="button" onClick={() => setShowCc(true)} className="hover:text-blue-400">
+                      <button type="button" onClick={() => setShowCc(true)} className="hover:text-blue-400 px-1 py-0.5 rounded hover:bg-slate-800">
                         Cc
                       </button>
                     )}
                     {!showBcc && (
-                      <button type="button" onClick={() => setShowBcc(true)} className="hover:text-blue-400">
+                      <button type="button" onClick={() => setShowBcc(true)} className="hover:text-blue-400 px-1 py-0.5 rounded hover:bg-slate-800">
                         Bcc
                       </button>
                     )}
@@ -4687,12 +4687,12 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     <span className="text-slate-400 font-semibold w-10">Cc:</span>
                     <input
                       type="text"
-                      placeholder="cc@example.com"
+                      placeholder="team@example.com, manager@company.com..."
                       value={composeData.cc}
                       onChange={(e) => setComposeData({ ...composeData, cc: e.target.value })}
                       className="w-full bg-transparent text-white placeholder-slate-500 focus:outline-none text-xs"
                     />
-                    <button type="button" onClick={() => setShowCc(false)} className="text-slate-500 text-xs">✕</button>
+                    <button type="button" onClick={() => setShowCc(false)} className="text-slate-500 hover:text-white text-xs px-1">✕</button>
                   </div>
                 )}
 
@@ -4701,12 +4701,12 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     <span className="text-slate-400 font-semibold w-10">Bcc:</span>
                     <input
                       type="text"
-                      placeholder="bcc@example.com"
+                      placeholder="partner1@example.com, audit@company.com..."
                       value={composeData.bcc}
                       onChange={(e) => setComposeData({ ...composeData, bcc: e.target.value })}
                       className="w-full bg-transparent text-white placeholder-slate-500 focus:outline-none text-xs"
                     />
-                    <button type="button" onClick={() => setShowBcc(false)} className="text-slate-500 text-xs">✕</button>
+                    <button type="button" onClick={() => setShowBcc(false)} className="text-slate-500 hover:text-white text-xs px-1">✕</button>
                   </div>
                 )}
 

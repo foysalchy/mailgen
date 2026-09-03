@@ -221,8 +221,17 @@ export async function POST(request: Request) {
           console.error('Local Postfix SMTP relay notice:', smtpErr.message);
         }
 
-        // 2. Deliver copy to internal inbox if recipient belongs to MailBox Pro
-        const recipientEmails = to.split(',').map((e: string) => e.trim().toLowerCase());
+        // 2. Deliver copy to internal inboxes if any recipients (To, CC, BCC) belong to MailBox Pro
+        const allRecipientInputs = [to, cc, bcc].filter(Boolean).join(',');
+        const recipientEmails = Array.from(
+          new Set(
+            allRecipientInputs
+              .split(/[,;]/)
+              .map((e: string) => e.trim().toLowerCase())
+              .filter((e: string) => e.includes('@'))
+          )
+        );
+
         for (const recEmail of recipientEmails) {
           const [localRec]: any = await pool.query('SELECT id, company_id FROM virtual_users WHERE email = ?', [recEmail]);
           if (localRec.length > 0) {
