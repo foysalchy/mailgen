@@ -123,6 +123,7 @@ export default function MailboxApp() {
   const [profileSettingsForm, setProfileSettingsForm] = useState({
     name: '',
     email: '',
+    signature: '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
@@ -227,6 +228,23 @@ export default function MailboxApp() {
   const [createGroupModal, setCreateGroupModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupCsv, setNewGroupCsv] = useState('');
+
+  // Sub-Users state (Legacy) & Company Roles
+  const [subUsers, setSubUsers] = useState<any[]>([]);
+  const [subUserModal, setSubUserModal] = useState(false);
+  const [subUserForm, setSubUserForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    permissions: {
+      canSendBulk: false,
+      canDeleteMail: true,
+      canManageFolders: true,
+      canManageTags: true,
+      canManageDomains: false,
+      canManageMailboxes: false,
+    },
+  });
 
   // Company Roles & Granular Permissions state
   const [companyRoles, setCompanyRoles] = useState<any[]>([]);
@@ -1673,7 +1691,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
       const data = await res.json();
       if (data.success) {
         setNewMailboxModal(false);
-        setNewMailboxData({ username: '', password: '', fullName: '', signature: '', quotaMb: 2048, domainId: domains[0]?.id?.toString() || '' });
+        setNewMailboxData({ username: '', password: '', fullName: '', signature: '', quotaMb: 2048, roleId: '', domainId: domains[0]?.id?.toString() || '' });
         fetchMailboxes(currentUser.id);
         toast.success(`Success! Created mailbox: ${data.mailbox.email}`);
       } else {
@@ -3639,6 +3657,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                                   fullName: mb.full_name || '',
                                   signature: mb.signature || '',
                                   quotaMb: mb.quota_mb || 2048,
+                                  roleId: mb.role_id ? mb.role_id.toString() : '',
                                   password: '',
                                 });
                               }}
