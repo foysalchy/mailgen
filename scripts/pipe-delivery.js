@@ -93,18 +93,39 @@ function parseRawEmail(raw) {
       }
     }
   } else {
-    // Single part
+  // Single part or system bounce notification
     if (contentType.includes('text/html')) {
       bodyHtml = bodySection;
       bodyText = bodySection.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
     } else {
       bodyText = bodySection;
-      bodyHtml = '<p>' + bodySection.replace(/\n/g, '<br/>') + '</p>';
+      
+      // If it is a System Bounce / Undelivered Mail (from MAILER-DAEMON / Postmaster)
+      if (fromRaw.toLowerCase().includes('daemon') || fromRaw.toLowerCase().includes('postmaster') || subject.toLowerCase().includes('undelivered')) {
+        bodyHtml = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; color: #f8fafc; max-width: 650px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px; border-bottom: 1px solid #334155; padding-bottom: 12px;">
+            <div style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold;">⚠️</div>
+            <h3 style="margin: 0; font-size: 15px; color: #fca5a5; font-weight: 700;">Mail Delivery System Notice</h3>
+          </div>
+          <p style="color: #cbd5e1; font-size: 13px; line-height: 1.6; margin-top: 0;">Your email message could not be delivered to one or more recipients due to a remote mailserver policy or routing failure.</p>
+          
+          <div style="background: #020617; border: 1px solid #1e293b; border-radius: 8px; padding: 14px; margin: 15px 0; font-family: monospace; font-size: 12px; color: #e2e8f0; line-height: 1.7; overflow-x: auto; white-space: pre-wrap;">
+${bodySection.trim()}
+          </div>
+          <div style="font-size: 11px; color: #94a3b8; margin-top: 10px;">
+            Tip: Verify that the recipient address is valid and that your domain has IPv4/IPv6 SPF records properly configured.
+          </div>
+        </div>
+        `;
+      } else {
+        bodyHtml = '<div style="white-space: pre-wrap; font-family: sans-serif; line-height: 1.6;">' + bodySection.replace(/\n/g, '<br/>') + '</div>';
+      }
     }
   }
 
   if (!bodyHtml && bodyText) {
-    bodyHtml = '<p>' + bodyText.replace(/\n/g, '<br/>') + '</p>';
+    bodyHtml = '<div style="white-space: pre-wrap; font-family: sans-serif; line-height: 1.6;">' + bodyText.replace(/\n/g, '<br/>') + '</div>';
   }
   if (!bodyText && bodyHtml) {
     bodyText = bodyHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
