@@ -1485,6 +1485,31 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
     }
   };
 
+  // Helper to sanitize & clean Quoted-Printable MIME encodings (=20, =3D, =E2=80=AF, etc.)
+  const cleanEmailContent = (rawContent: string) => {
+    if (!rawContent) return '';
+    let text = rawContent;
+    // Fix soft line breaks
+    text = text.replace(/=\r?\n/g, '');
+    // Fix common URL quote artifacts like https://domain.com/3D"mailto:..."
+    text = text.replace(/(?:https?:\/\/[^/]+\/)?3D"?mailto:([^">\s]+)"?/gi, 'mailto:$1');
+    text = text.replace(/3D"/g, '"').replace(/3D'/g, "'");
+    // Decode Quoted-Printable hex codes =XX
+    text = text.replace(/=([0-9A-Fa-f]{2})/g, (match, hex) => {
+      try {
+        const code = parseInt(hex, 16);
+        if (code === 0x20) return ' ';
+        if (code === 0x3D) return '=';
+        return String.fromCharCode(code);
+      } catch {
+        return match;
+      }
+    });
+    // Clean remaining UTF-8 narrow spaces often sent by Gmail (=E2=80=AF)
+    text = text.replace(/\u202F/g, ' ').replace(/\u00A0/g, ' ');
+    return text;
+  };
+
   // Reply & Forward Handlers (Gmail / cPanel style)
   const handleReplyMessage = (msg: any, replyAll: boolean = false) => {
     if (!msg) return;
@@ -3887,7 +3912,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                           {/* Collapsed Snippet */}
                           {isCollapsed ? (
                             <p className="text-xs text-slate-400 truncate mt-2 pl-11">
-                              {msg.snippet || msg.body_text || 'Click to view full message...'}
+                              {cleanEmailContent(msg.snippet || msg.body_text || 'Click to view full message...')}
                             </p>
                           ) : (
                             /* Expanded Message Body */
@@ -3895,7 +3920,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                               <div
                                 className="prose prose-invert max-w-none text-slate-200 text-sm leading-relaxed overflow-x-auto"
                                 dangerouslySetInnerHTML={{
-                                  __html: msg.body_html || `<p>${msg.body_text || ''}</p>`,
+                                  __html: cleanEmailContent(msg.body_html || `<p>${msg.body_text || ''}</p>`),
                                 }}
                               />
                             </div>
