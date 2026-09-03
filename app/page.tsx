@@ -309,7 +309,7 @@ export default function MailboxApp() {
       fetchOrganization(currentUser.id, selectedMailbox?.id);
       fetchSubUsers(currentUser.id);
       fetchApiKeys(currentUser.id);
-      fetchTemplates(currentUser.id);
+      fetchTemplates(currentUser.id, currentUser.company_id);
       fetchBilling(currentUser.id);
       fetchSettings(currentUser.id);
       if (currentUser.role === 'admin' || currentUser.role === 'superadmin') {
@@ -511,9 +511,10 @@ export default function MailboxApp() {
     }
   };
 
-  const fetchTemplates = async (userId: number) => {
+  const fetchTemplates = async (userId: number, companyId?: number) => {
     try {
-      const res = await fetch(`/api/templates?userId=${userId}`);
+      const url = companyId ? `/api/templates?userId=${userId}&companyId=${companyId}` : `/api/templates?userId=${userId}`;
+      const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
         setEmailTemplates(data.templates || []);
@@ -537,6 +538,7 @@ export default function MailboxApp() {
         body: JSON.stringify({
           action: templateFormData.id ? 'update' : 'create',
           userId: currentUser.id,
+          companyId: currentUser.company_id || 1,
           templateId: templateFormData.id,
           name: templateFormData.name,
           subject: templateFormData.subject,
@@ -549,7 +551,7 @@ export default function MailboxApp() {
       if (data.success) {
         setTemplateModal(false);
         setTemplateFormData({ id: null, name: '', subject: '', category: 'General', bodyHtml: '' });
-        fetchTemplates(currentUser.id);
+        fetchTemplates(currentUser.id, currentUser.company_id);
         toast.success(data.message || 'Template saved successfully!');
       } else {
         toast.error(data.message || 'Failed to save template');

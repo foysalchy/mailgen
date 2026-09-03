@@ -1,23 +1,31 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
-// GET: Retrieve all templates for user
+// GET: Retrieve all templates for user or company
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const companyId = searchParams.get('companyId');
 
-    if (!userId) {
-      return NextResponse.json({ success: false, message: 'userId is required' }, { status: 400 });
+    if (!userId && !companyId) {
+      return NextResponse.json({ success: false, message: 'userId or companyId is required' }, { status: 400 });
     }
 
-    const [templates]: any = await pool.query(
-      `SELECT id, user_id, name, subject, category, body_html, body_text, created_at, updated_at 
-       FROM email_templates 
-       WHERE user_id = ? 
-       ORDER BY updated_at DESC`,
-      [userId]
-    );
+    let query = 'SELECT * FROM email_templates WHERE ';
+    const params: any[] = [];
+
+    if (companyId) {
+      query += '(company_id = ? OR user_id = ?)';
+      params.push(companyId, userId || 0);
+    } else {
+      query += 'user_id = ?';
+      params.push(userId);
+    }
+
+    query += ' ORDER BY id DESC';
+
+    const [templates]: any = await pool.query(query, params);
 
     return NextResponse.json({ success: true, templates });
   } catch (error: any) {
@@ -29,20 +37,20 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { action = 'create', userId, templateId, name, subject, category = 'General', bodyHtml, bodyText } = body;
+    const { action = 'create', userId, companyId, templateId, name, subject, category = 'General', bodyHtml, bodyText } = body;
 
     if (action === 'create') {
-      if (!userId || !name || !subject || !bodyHtml) {
+      if (!name || !subject || !bodyHtml) {
         return NextResponse.json(
-          { success: false, message: 'User ID, Name, Subject, and Content are required.' },
+          { success: false, message: 'Template Name, Subject, and Content are required.' },
           { status: 400 }
         );
       }
 
       const [res]: any = await pool.query(
-        `INSERT INTO email_templates (user_id, name, subject, category, body_html, body_text)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [userId, name.trim(), subject.trim(), category.trim(), bodyHtml, bodyText || '']
+        `INSERT INTO email_templates (company_id, user_id, name, subject, category, body_html, body_text)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [companyId || 1, userId || 1, name.trim(), subject.trim(), category.trim(), bodyHtml, bodyText || '']
       );
 
       return NextResponse.json({
