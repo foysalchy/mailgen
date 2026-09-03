@@ -201,6 +201,12 @@ export default function MailboxApp() {
     to: '',
     cc: '',
     bcc: '',
+    toTags: [] as string[],
+    ccTags: [] as string[],
+    bccTags: [] as string[],
+    toInput: '',
+    ccInput: '',
+    bccInput: '',
     subject: '',
     bodyText: '',
     bodyHtml: '',
@@ -1092,6 +1098,36 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
       return;
     }
 
+    // Resolve final To, CC, and BCC recipient lists from tags + current inputs
+    const finalTo = Array.from(
+      new Set([
+        ...composeData.toTags,
+        ...(composeData.toInput.trim() ? [composeData.toInput.trim()] : []),
+        ...(composeData.to ? composeData.to.split(/[,;]/).map((s) => s.trim()) : []),
+      ])
+    ).filter((s) => s.includes('@')).join(', ');
+
+    const finalCc = Array.from(
+      new Set([
+        ...composeData.ccTags,
+        ...(composeData.ccInput.trim() ? [composeData.ccInput.trim()] : []),
+        ...(composeData.cc ? composeData.cc.split(/[,;]/).map((s) => s.trim()) : []),
+      ])
+    ).filter((s) => s.includes('@')).join(', ');
+
+    const finalBcc = Array.from(
+      new Set([
+        ...composeData.bccTags,
+        ...(composeData.bccInput.trim() ? [composeData.bccInput.trim()] : []),
+        ...(composeData.bcc ? composeData.bcc.split(/[,;]/).map((s) => s.trim()) : []),
+      ])
+    ).filter((s) => s.includes('@')).join(', ');
+
+    if (!finalTo) {
+      toast.warning('Please enter at least one recipient email address in To.');
+      return;
+    }
+
     try {
       const res = await fetch('/api/webmail/messages', {
         method: 'POST',
@@ -1099,9 +1135,9 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
         body: JSON.stringify({
           action: isScheduling ? 'schedule' : 'send',
           mailboxId: activeBox.id,
-          to: composeData.to,
-          cc: composeData.cc,
-          bcc: composeData.bcc,
+          to: finalTo,
+          cc: finalCc,
+          bcc: finalBcc,
           subject: composeData.subject,
           bodyText: composeData.bodyText,
           scheduledAt: isScheduling ? composeData.scheduledAt : null,
@@ -1111,7 +1147,22 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
       const data = await res.json();
       if (data.success) {
         setComposeModal(false);
-        setComposeData({ to: '', cc: '', bcc: '', subject: '', bodyText: '', bodyHtml: '', priority: 'normal', scheduledAt: '' });
+        setComposeData({
+          to: '',
+          cc: '',
+          bcc: '',
+          toTags: [],
+          ccTags: [],
+          bccTags: [],
+          toInput: '',
+          ccInput: '',
+          bccInput: '',
+          subject: '',
+          bodyText: '',
+          bodyHtml: '',
+          priority: 'normal',
+          scheduledAt: '',
+        });
         setIsScheduling(false);
         setShowCc(false);
         setShowBcc(false);
@@ -4657,18 +4708,72 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
             {/* Window Body (hidden if minimized) */}
             {!isComposeMinimized && (
               <form onSubmit={handleSendMessage} className="p-3 space-y-2 flex-1 flex flex-col overflow-y-auto bg-slate-900">
-                {/* To Field with CC & BCC (Supports Multiple Comma-Separated Emails) */}
-                <div className="flex items-center border-b border-slate-800 py-1.5 text-xs">
-                  <span className="text-slate-400 font-semibold w-10">To:</span>
+                {/* To Field with Interactive Tag Badges (Enter / Comma to add Tag) */}
+                <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-800 py-1.5 text-xs min-h-[36px]">
+                  <span className="text-slate-400 font-semibold w-8 shrink-0">To:</span>
+                  
+                  {composeData.toTags.map((tag, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-full text-xs font-mono animate-fadeIn"
+                    >
+                      <span>{tag}</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setComposeData((prev) => ({
+                            ...prev,
+                            toTags: prev.toTags.filter((_, i) => i !== idx),
+                          }))
+                        }
+                        className="text-blue-400 hover:text-white text-xs font-bold leading-none"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+
                   <input
                     type="text"
-                    required
-                    placeholder="user1@example.com, user2@gmail.com..."
-                    value={composeData.to}
-                    onChange={(e) => setComposeData({ ...composeData, to: e.target.value })}
-                    className="w-full bg-transparent text-white placeholder-slate-500 focus:outline-none text-xs"
+                    placeholder={composeData.toTags.length === 0 ? "recipient@example.com (press Enter or Comma)..." : "Add more..."}
+                    value={composeData.toInput}
+                    onChange={(e) => setComposeData({ ...composeData, toInput: e.target.value })}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ',' || e.key === ';' || e.key === 'Tab') {
+                        if (composeData.toInput.trim()) {
+                          e.preventDefault();
+                          const val = composeData.toInput.replace(/[,;]/g, '').trim();
+                          if (val && !composeData.toTags.includes(val)) {
+                            setComposeData((prev) => ({
+                              ...prev,
+                              toTags: [...prev.toTags, val],
+                              toInput: '',
+                            }));
+                          }
+                        }
+                      } else if (e.key === 'Backspace' && !composeData.toInput && composeData.toTags.length > 0) {
+                        setComposeData((prev) => ({
+                          ...prev,
+                          toTags: prev.toTags.slice(0, -1),
+                        }));
+                      }
+                    }}
+                    onBlur={() => {
+                      if (composeData.toInput.trim()) {
+                        const val = composeData.toInput.replace(/[,;]/g, '').trim();
+                        if (val && !composeData.toTags.includes(val)) {
+                          setComposeData((prev) => ({
+                            ...prev,
+                            toTags: [...prev.toTags, val],
+                            toInput: '',
+                          }));
+                        }
+                      }
+                    }}
+                    className="flex-1 min-w-[140px] bg-transparent text-white placeholder-slate-500 focus:outline-none text-xs"
                   />
-                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium shrink-0 ml-2">
+
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium shrink-0 ml-auto">
                     {!showCc && (
                       <button type="button" onClick={() => setShowCc(true)} className="hover:text-blue-400 px-1 py-0.5 rounded hover:bg-slate-800">
                         Cc
@@ -4682,29 +4787,139 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   </div>
                 </div>
 
+                {/* CC Field with Tag Badges */}
                 {showCc && (
-                  <div className="flex items-center border-b border-slate-800 py-1 text-xs">
-                    <span className="text-slate-400 font-semibold w-10">Cc:</span>
+                  <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-800 py-1 text-xs min-h-[34px]">
+                    <span className="text-slate-400 font-semibold w-8 shrink-0">Cc:</span>
+
+                    {composeData.ccTags.map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1 bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full text-xs font-mono animate-fadeIn"
+                      >
+                        <span>{tag}</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setComposeData((prev) => ({
+                              ...prev,
+                              ccTags: prev.ccTags.filter((_, i) => i !== idx),
+                            }))
+                          }
+                          className="text-purple-400 hover:text-white text-xs font-bold leading-none"
+                        >
+                          ×
+                      </button>
+                    </span>
+                    ))}
+
                     <input
                       type="text"
-                      placeholder="team@example.com, manager@company.com..."
-                      value={composeData.cc}
-                      onChange={(e) => setComposeData({ ...composeData, cc: e.target.value })}
-                      className="w-full bg-transparent text-white placeholder-slate-500 focus:outline-none text-xs"
+                      placeholder="cc@example.com (press Enter)..."
+                      value={composeData.ccInput}
+                      onChange={(e) => setComposeData({ ...composeData, ccInput: e.target.value })}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ',' || e.key === ';' || e.key === 'Tab') {
+                          if (composeData.ccInput.trim()) {
+                            e.preventDefault();
+                            const val = composeData.ccInput.replace(/[,;]/g, '').trim();
+                            if (val && !composeData.ccTags.includes(val)) {
+                              setComposeData((prev) => ({
+                                ...prev,
+                                ccTags: [...prev.ccTags, val],
+                                ccInput: '',
+                              }));
+                            }
+                          }
+                        } else if (e.key === 'Backspace' && !composeData.ccInput && composeData.ccTags.length > 0) {
+                          setComposeData((prev) => ({
+                            ...prev,
+                            ccTags: prev.ccTags.slice(0, -1),
+                          }));
+                        }
+                      }}
+                      onBlur={() => {
+                        if (composeData.ccInput.trim()) {
+                          const val = composeData.ccInput.replace(/[,;]/g, '').trim();
+                          if (val && !composeData.ccTags.includes(val)) {
+                            setComposeData((prev) => ({
+                              ...prev,
+                              ccTags: [...prev.ccTags, val],
+                              ccInput: '',
+                            }));
+                          }
+                        }
+                      }}
+                      className="flex-1 min-w-[120px] bg-transparent text-white placeholder-slate-500 focus:outline-none text-xs"
                     />
                     <button type="button" onClick={() => setShowCc(false)} className="text-slate-500 hover:text-white text-xs px-1">✕</button>
                   </div>
                 )}
 
+                {/* BCC Field with Tag Badges */}
                 {showBcc && (
-                  <div className="flex items-center border-b border-slate-800 py-1 text-xs">
-                    <span className="text-slate-400 font-semibold w-10">Bcc:</span>
+                  <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-800 py-1 text-xs min-h-[34px]">
+                    <span className="text-slate-400 font-semibold w-8 shrink-0">Bcc:</span>
+
+                    {composeData.bccTags.map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full text-xs font-mono animate-fadeIn"
+                      >
+                        <span>{tag}</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setComposeData((prev) => ({
+                              ...prev,
+                              bccTags: prev.bccTags.filter((_, i) => i !== idx),
+                            }))
+                          }
+                          className="text-emerald-400 hover:text-white text-xs font-bold leading-none"
+                        >
+                          ×
+                      </button>
+                    </span>
+                    ))}
+
                     <input
                       type="text"
-                      placeholder="partner1@example.com, audit@company.com..."
-                      value={composeData.bcc}
-                      onChange={(e) => setComposeData({ ...composeData, bcc: e.target.value })}
-                      className="w-full bg-transparent text-white placeholder-slate-500 focus:outline-none text-xs"
+                      placeholder="bcc@example.com (press Enter)..."
+                      value={composeData.bccInput}
+                      onChange={(e) => setComposeData({ ...composeData, bccInput: e.target.value })}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ',' || e.key === ';' || e.key === 'Tab') {
+                          if (composeData.bccInput.trim()) {
+                            e.preventDefault();
+                            const val = composeData.bccInput.replace(/[,;]/g, '').trim();
+                            if (val && !composeData.bccTags.includes(val)) {
+                              setComposeData((prev) => ({
+                                ...prev,
+                                bccTags: [...prev.bccTags, val],
+                                bccInput: '',
+                              }));
+                            }
+                          }
+                        } else if (e.key === 'Backspace' && !composeData.bccInput && composeData.bccTags.length > 0) {
+                          setComposeData((prev) => ({
+                            ...prev,
+                            bccTags: prev.bccTags.slice(0, -1),
+                          }));
+                        }
+                      }}
+                      onBlur={() => {
+                        if (composeData.bccInput.trim()) {
+                          const val = composeData.bccInput.replace(/[,;]/g, '').trim();
+                          if (val && !composeData.bccTags.includes(val)) {
+                            setComposeData((prev) => ({
+                              ...prev,
+                              bccTags: [...prev.bccTags, val],
+                              bccInput: '',
+                            }));
+                          }
+                        }
+                      }}
+                      className="flex-1 min-w-[120px] bg-transparent text-white placeholder-slate-500 focus:outline-none text-xs"
                     />
                     <button type="button" onClick={() => setShowBcc(false)} className="text-slate-500 hover:text-white text-xs px-1">✕</button>
                   </div>
