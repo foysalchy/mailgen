@@ -66,14 +66,15 @@ export async function POST(request: Request) {
     const invoiceNumber = `INV-${new Date().getFullYear()}-${String(companyId).padStart(4, '0')}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     await pool.query(
-      `INSERT INTO invoices (company_id, user_id, invoice_number, plan_id, plan_name, amount, status, payment_method, transaction_id)
-       VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)`,
+      `INSERT INTO invoices (company_id, user_id, invoice_number, plan_id, plan_name, amount, base_amount, overage_amount, status, payment_method, transaction_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 0.00, 'pending', ?, ?)`,
       [
         companyId,
         userId,
         invoiceNumber,
         plan.id,
         plan.name,
+        plan.price_monthly,
         plan.price_monthly,
         paymentMethod,
         transactionId.trim() || `SIGNUP-${Date.now()}`,
