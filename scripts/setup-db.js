@@ -60,16 +60,36 @@ async function run() {
     await connection.query(`
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
+        company_id INT NULL,
+        parent_id INT NULL,
         name VARCHAR(150) NOT NULL,
         email VARCHAR(191) UNIQUE NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
         plan_id INT DEFAULT 1,
-        role ENUM('admin', 'user') DEFAULT 'user',
+        pending_plan_id INT NULL,
+        role ENUM('superadmin', 'admin', 'company_admin', 'user') DEFAULT 'company_admin',
         status ENUM('active', 'suspended', 'pending') DEFAULT 'active',
+        permissions_json LONGTEXT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE SET NULL
       ) ENGINE=InnoDB;
     `);
+
+    // Ensure users columns exist if table was created previously
+    const userColumnsToAdd = [
+      { name: 'company_id', type: 'INT NULL' },
+      { name: 'parent_id', type: 'INT NULL' },
+      { name: 'pending_plan_id', type: 'INT NULL' },
+      { name: 'permissions_json', type: 'LONGTEXT NULL' },
+    ];
+    for (const col of userColumnsToAdd) {
+      try {
+        await connection.query(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`);
+      } catch (e) {}
+    }
+    try {
+      await connection.query(`ALTER TABLE users MODIFY COLUMN role ENUM('superadmin', 'admin', 'company_admin', 'user') DEFAULT 'company_admin'`);
+    } catch (e) {}
 
     // 3. Virtual Domains Table (Compatible with Postfix / Dovecot VPS)
     await connection.query(`
