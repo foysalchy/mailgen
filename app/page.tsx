@@ -1004,9 +1004,16 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
       if (data.success) {
         setMailboxes(data.mailboxes);
         if (data.mailboxes.length > 0) {
-          setSelectedMailbox((prev: any) => prev || data.mailboxes[0]);
+          const savedMailboxId = localStorage.getItem('active_mailbox_id');
+          const matchedSaved = savedMailboxId ? data.mailboxes.find((m: any) => m.id === Number(savedMailboxId)) : null;
+          const targetBox = matchedSaved || data.mailboxes[0];
+          setSelectedMailbox(targetBox);
+          if (targetBox?.id) {
+            localStorage.setItem('active_mailbox_id', targetBox.id.toString());
+          }
         } else {
           setSelectedMailbox(null);
+          localStorage.removeItem('active_mailbox_id');
         }
       }
     } catch (err) {
@@ -1531,12 +1538,12 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
       ccRecipients = allRecs;
     }
 
-    // Formatted quote header
-    const quoteHeader = `<br/><br/><div style="border-left: 2px solid #925ce9; padding-left: 12px; margin-top: 16px; color: #64748b; font-size: 13px;">
-      <p style="margin: 0 0 6px 0; font-weight: 600; color: #475569;">
-        On ${new Date(msg.created_at).toLocaleString()}, <strong>${msg.sender_name || msg.sender}</strong> wrote:
-      </p>
-      <div>${msg.body_html || `<p>${msg.body_text || ''}</p>`}</div>
+    // Modern Gmail-Style Quote Block (Clean card with border accent)
+    const quoteHeader = `<br/><br/><div style="border-left: 3px solid #925ce9; background: #f8fafc; padding: 12px 16px; margin-top: 16px; border-radius: 0 8px 8px 0; color: #334155; font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+      <div style="margin-bottom: 8px; font-weight: 600; color: #64748b; font-size: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;">
+        On ${new Date(msg.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}, <span style="color: #925ce9; font-weight: 700;">${msg.sender_name || msg.sender}</span> &lt;${senderEmail}&gt; wrote:
+      </div>
+      <div style="line-height: 1.6; color: #1e293b;">${cleanEmailContent(msg.body_html || `<p>${msg.body_text || ''}</p>`)}</div>
     </div>`;
 
     setComposeData({
@@ -1556,11 +1563,12 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
       scheduledAt: '',
     });
 
-    if (ccRecipients.length > 0) setShowCc(true);
+    setShowCc(ccRecipients.length > 0);
+    setShowBcc(false);
     setComposeEditorView('editor');
     setIsComposeMinimized(false);
     setComposeModal(true);
-    toast.info(`Replying to ${msg.sender_name || msg.sender}`);
+    toast.info(`Replying to ${recipientTo[0] || 'sender'}`);
   };
 
   const handleForwardMessage = (msg: any) => {
@@ -1572,15 +1580,15 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
       fwdSubject = `Fwd: ${fwdSubject}`;
     }
 
-    // Forwarded message block
-    const fwdHeader = `<br/><br/><div style="border-left: 2px solid #3b82f6; padding-left: 12px; margin-top: 16px; font-size: 13px; color: #64748b;">
-      <p style="margin: 0 0 4px 0; font-weight: 600; color: #3b82f6;">---------- Forwarded message ---------</p>
-      <p style="margin: 2px 0;"><strong>From:</strong> ${msg.sender_name || msg.sender} &lt;${msg.sender}&gt;</p>
-      <p style="margin: 2px 0;"><strong>Date:</strong> ${new Date(msg.created_at).toLocaleString()}</p>
-      <p style="margin: 2px 0;"><strong>Subject:</strong> ${msg.subject || '(No Subject)'}</p>
-      <p style="margin: 2px 0 10px 0;"><strong>To:</strong> ${msg.recipients || ''}</p>
+    // Modern Gmail Forwarded Message Card
+    const fwdHeader = `<br/><br/><div style="border-left: 3px solid #3b82f6; background: #f8fafc; padding: 12px 16px; margin-top: 16px; border-radius: 0 8px 8px 0; font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #334155;">
+      <div style="margin: 0 0 6px 0; font-weight: 700; color: #3b82f6; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">---------- Forwarded message ---------</div>
+      <div style="margin: 3px 0; font-size: 12px;"><strong>From:</strong> ${msg.sender_name || msg.sender} &lt;${msg.sender}&gt;</div>
+      <div style="margin: 3px 0; font-size: 12px;"><strong>Date:</strong> ${new Date(msg.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</div>
+      <div style="margin: 3px 0; font-size: 12px;"><strong>Subject:</strong> ${msg.subject || '(No Subject)'}</div>
+      <div style="margin: 3px 0 10px 0; font-size: 12px;"><strong>To:</strong> ${msg.recipients || ''}</div>
       <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 8px 0;"/>
-      <div>${msg.body_html || `<p>${msg.body_text || ''}</p>`}</div>
+      <div style="line-height: 1.6; color: #1e293b;">${cleanEmailContent(msg.body_html || `<p>${msg.body_text || ''}</p>`)}</div>
     </div>`;
 
     setComposeData({
@@ -3132,8 +3140,13 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   <select
                     value={selectedMailbox?.id || ''}
                     onChange={(e) => {
-                      const found = mailboxes.find((m) => m.id === Number(e.target.value));
-                      setSelectedMailbox(found || null);
+                      const id = Number(e.target.value);
+                      const found = mailboxes.find((m) => m.id === id);
+                      if (found) {
+                        setSelectedMailbox(found);
+                        localStorage.setItem('active_mailbox_id', found.id.toString());
+                        toast.success(`Switched active mailbox to ${found.email}`);
+                      }
                     }}
                     className="w-full bg-slate-800 border border-slate-700 text-xs rounded-lg px-2 py-1.5 text-slate-200 focus:outline-none focus:ring-1 focus:ring-[#925ce9]"
                   >
