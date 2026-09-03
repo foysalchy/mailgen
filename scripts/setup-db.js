@@ -142,6 +142,7 @@ async function run() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         mailbox_id INT NOT NULL,
         folder ENUM('inbox', 'sent', 'drafts', 'spam', 'trash', 'archive') DEFAULT 'inbox',
+        custom_folder_id INT NULL DEFAULT NULL,
         sender VARCHAR(255) NOT NULL,
         sender_name VARCHAR(255) NULL,
         recipients TEXT NOT NULL,
@@ -152,8 +153,59 @@ async function run() {
         attachments_json LONGTEXT NULL,
         is_read BOOLEAN DEFAULT FALSE,
         is_starred BOOLEAN DEFAULT FALSE,
+        is_scheduled BOOLEAN DEFAULT FALSE,
+        scheduled_at DATETIME NULL DEFAULT NULL,
+        size_kb INT DEFAULT 15,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (mailbox_id) REFERENCES virtual_users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `);
+
+    // Ensure extra message columns exist
+    const msgColsToAdd = [
+      { name: 'custom_folder_id', type: 'INT NULL DEFAULT NULL' },
+      { name: 'scheduled_at', type: 'DATETIME NULL DEFAULT NULL' },
+      { name: 'is_scheduled', type: 'BOOLEAN DEFAULT FALSE' },
+      { name: 'size_kb', type: 'INT DEFAULT 15' },
+    ];
+    for (const col of msgColsToAdd) {
+      try {
+        await connection.query(`ALTER TABLE webmail_messages ADD COLUMN ${col.name} ${col.type}`);
+      } catch (e) {}
+    }
+
+    // Custom Folders Table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS custom_folders (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        mailbox_id INT NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        color VARCHAR(30) DEFAULT '#3b82f6',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (mailbox_id) REFERENCES virtual_users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `);
+
+    // Custom Labels Table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS custom_labels (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        color VARCHAR(30) DEFAULT '#10b981',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `);
+
+    // Message Labels Mapping Table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS message_labels (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        message_id INT NOT NULL,
+        label_id INT NOT NULL,
+        FOREIGN KEY (message_id) REFERENCES webmail_messages(id) ON DELETE CASCADE,
+        FOREIGN KEY (label_id) REFERENCES custom_labels(id) ON DELETE CASCADE
       ) ENGINE=InnoDB;
     `);
 
