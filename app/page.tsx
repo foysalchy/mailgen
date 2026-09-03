@@ -163,6 +163,8 @@ export default function MailboxApp() {
   // Domains & Mailboxes state
   const [domains, setDomains] = useState<any[]>([]);
   const [newDomainInput, setNewDomainInput] = useState('');
+  const [editDomainModal, setEditDomainModal] = useState<any>(null);
+  const [editDomainName, setEditDomainName] = useState('');
   const [selectedDomainDns, setSelectedDomainDns] = useState<any>(null);
   const [verifyingDns, setVerifyingDns] = useState(false);
 
@@ -258,9 +260,20 @@ export default function MailboxApp() {
       canSendBulk: false,
       canDeleteMail: true,
       canManageFolders: true,
-      canManageTemplates: false,
-      canManageSettings: false,
-      canManageMailboxes: false,
+      // Granular Custom Domain permissions
+      canAddDomains: false,
+      canEditDomains: false,
+      canDeleteDomains: false,
+      // Granular Email Templates permissions
+      canCreateTemplates: false,
+      canEditTemplates: false,
+      canDeleteTemplates: false,
+      // Granular REST API Keys access
+      canAccessRestApi: false,
+      // Granular Mailboxes permissions
+      canCreateMailboxes: false,
+      canEditMailboxes: false,
+      canDeleteMailboxes: false,
     },
   });
   // Super Admin state (Multi-Tenant SaaS Oversight)
@@ -650,9 +663,16 @@ export default function MailboxApp() {
             canSendBulk: false,
             canDeleteMail: true,
             canManageFolders: true,
-            canManageTemplates: false,
-            canManageSettings: false,
-            canManageMailboxes: false,
+            canAddDomains: false,
+            canEditDomains: false,
+            canDeleteDomains: false,
+            canCreateTemplates: false,
+            canEditTemplates: false,
+            canDeleteTemplates: false,
+            canAccessRestApi: false,
+            canCreateMailboxes: false,
+            canEditMailboxes: false,
+            canDeleteMailboxes: false,
           },
         });
         fetchRoles(currentUser?.company_id);
@@ -663,6 +683,33 @@ export default function MailboxApp() {
       }
     } catch (err: any) {
       toast.error(err.message || 'Error saving role');
+    }
+  };
+
+  const handleUpdateDomain = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editDomainModal?.id || !editDomainName.trim()) return;
+
+    try {
+      const res = await fetch('/api/domains', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          domainId: editDomainModal.id,
+          name: editDomainName.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEditDomainModal(null);
+        setEditDomainName('');
+        if (currentUser?.id) fetchDomains(currentUser.id, currentUser.company_id);
+        toast.success(data.message || 'Domain updated successfully!');
+      } else {
+        toast.error(data.message || 'Failed to update domain');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error updating domain');
     }
   };
 
@@ -2351,58 +2398,67 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               <span>Webmail Client</span>
             </button>
 
-            {currentUser.role !== 'mailbox_user' && (
-              <>
-                <button
-                  onClick={() => setActiveTab('domains')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === 'domains' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                >
-                  <Globe className="w-4 h-4" />
-                  <span>Custom Domains</span>
-                  <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">{domains.length}</span>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('mailboxes')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === 'mailboxes' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                >
-                  <Users className="w-4 h-4" />
-                  <span>Mailboxes (Users)</span>
-                  <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">
-                    {mailboxes.length}{currentUser.max_mailboxes ? `/${currentUser.max_mailboxes}` : ''}
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('bulk')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === 'bulk' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                >
-                  <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>Bulk Mail Campaign</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setActiveTab('apikeys');
-                    if (currentUser?.id) fetchApiKeys(currentUser.id);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === 'apikeys' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                >
-                  <KeyRound className="w-4 h-4 text-emerald-400" />
-                  <span>Email REST API</span>
-                  <span className="ml-auto text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-mono">v1</span>
-                </button>
-              </>
+            {/* Domains Tab (Visible if Admin or has Domain permissions) */}
+            {(currentUser.role !== 'mailbox_user' || currentUser?.permissions?.canAddDomains || currentUser?.permissions?.canEditDomains || currentUser?.permissions?.canDeleteDomains) && (
+              <button
+                onClick={() => setActiveTab('domains')}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'domains' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <Globe className="w-4 h-4" />
+                <span>Custom Domains</span>
+                <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">{domains.length}</span>
+              </button>
             )}
 
+            {/* Mailboxes Tab (Visible if Admin or has Mailbox permissions) */}
+            {(currentUser.role !== 'mailbox_user' || currentUser?.permissions?.canCreateMailboxes || currentUser?.permissions?.canEditMailboxes || currentUser?.permissions?.canDeleteMailboxes) && (
+              <button
+                onClick={() => setActiveTab('mailboxes')}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'mailboxes' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                <span>Mailboxes (Users)</span>
+                <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">
+                  {mailboxes.length}{currentUser.max_mailboxes ? `/${currentUser.max_mailboxes}` : ''}
+                </span>
+              </button>
+            )}
+
+            {/* Bulk Mail Campaign Tab */}
+            {(currentUser.role !== 'mailbox_user' || currentUser?.permissions?.canSendBulk) && (
+              <button
+                onClick={() => setActiveTab('bulk')}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'bulk' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span>Bulk Mail Campaign</span>
+              </button>
+            )}
+
+            {/* REST API Access Tab */}
+            {(currentUser.role !== 'mailbox_user' || currentUser?.permissions?.canAccessRestApi) && (
+              <button
+                onClick={() => {
+                  setActiveTab('apikeys');
+                  if (currentUser?.id) fetchApiKeys(currentUser.id);
+                }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'apikeys' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <KeyRound className="w-4 h-4 text-emerald-400" />
+                <span>Email REST API</span>
+                <span className="ml-auto text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-mono">v1</span>
+              </button>
+            )}
+
+            {/* Email Templates Tab (Always visible or guarded by canCreateTemplates/canEditTemplates) */}
             <button
               onClick={() => {
                 setActiveTab('templates');
@@ -3344,8 +3400,8 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 </p>
               </div>
 
-              {/* Add domain form (permission enforced) */}
-              {currentUser?.role !== 'sub_user' || currentUser?.permissions?.canManageDomains ? (
+              {/* Add domain form (permission enforced: Admin or canAddDomains) */}
+              {(currentUser?.role !== 'mailbox_user' || currentUser?.permissions?.canAddDomains) ? (
                 <div className="p-5 bg-slate-900 rounded-xl border border-slate-800 shadow-sm">
                   <form onSubmit={handleAddDomain} className="flex gap-3">
                     <div className="flex-1 relative">
@@ -3360,7 +3416,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     </div>
                     <button
                       type="submit"
-                      className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                      className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-blue-600/30"
                     >
                       <Plus className="w-4 h-4" />
                       <span>Add Domain</span>
@@ -3370,7 +3426,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               ) : (
                 <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl text-xs text-slate-400 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                  Domain creation and DNS management permission is restricted for your role.
+                  Domain registration is restricted for your role permissions.
                 </div>
               )}
 
@@ -3404,24 +3460,42 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                         <button
                           onClick={() => handleVerifyDns(dom.id)}
                           disabled={verifyingDns}
-                          className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 rounded-lg border border-slate-700 flex items-center gap-1.5 transition-colors"
+                          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 rounded-lg border border-slate-700 flex items-center gap-1.5 transition-colors"
                         >
                           <RefreshCw className={`w-3.5 h-3.5 ${verifyingDns ? 'animate-spin' : ''}`} />
-                          <span>Check DNS Now</span>
+                          <span>Check DNS</span>
                         </button>
                         <button
                           onClick={() => setSelectedDomainDns(dom)}
-                          className="px-3.5 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-xs font-medium text-blue-400 rounded-lg border border-blue-500/30 transition-colors"
+                          className="px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-xs font-medium text-blue-400 rounded-lg border border-blue-500/30 transition-colors"
                         >
-                          View DNS Guide
+                          DNS Guide
                         </button>
-                        <button
-                          onClick={() => handleDeleteDomain(dom.id, dom.name)}
-                          title={`Delete domain ${dom.name}`}
-                          className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg border border-rose-500/30 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+
+                        {/* EDIT DOMAIN BUTTON (Admin or canEditDomains) */}
+                        {(currentUser.role !== 'mailbox_user' || currentUser?.permissions?.canEditDomains) && (
+                          <button
+                            onClick={() => {
+                              setEditDomainModal(dom);
+                              setEditDomainName(dom.name);
+                            }}
+                            title="Edit Domain Name"
+                            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg border border-slate-700 transition-colors"
+                          >
+                            <Settings2 className="w-4 h-4" />
+                          </button>
+                        )}
+
+                        {/* DELETE DOMAIN BUTTON (Admin or canDeleteDomains) */}
+                        {(currentUser.role !== 'mailbox_user' || currentUser?.permissions?.canDeleteDomains) && (
+                          <button
+                            onClick={() => handleDeleteDomain(dom.id, dom.name)}
+                            title={`Delete domain ${dom.name}`}
+                            className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg border border-rose-500/30 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -4172,16 +4246,18 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     Design, organize, and store reusable email templates for one-click composing, bulk marketing campaigns, or transactional notifications.
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    setTemplateFormData({ id: null, name: '', subject: '', category: 'General', bodyHtml: '' });
-                    setTemplateModal(true);
-                  }}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-600/30 flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Create New Template</span>
-                </button>
+                {(currentUser.role !== 'mailbox_user' || currentUser?.permissions?.canCreateTemplates) && (
+                  <button
+                    onClick={() => {
+                      setTemplateFormData({ id: null, name: '', subject: '', category: 'General', bodyHtml: '' });
+                      setTemplateModal(true);
+                    }}
+                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-600/30 flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Create New Template</span>
+                  </button>
+                )}
               </div>
 
               {/* Templates Grid */}
@@ -4190,15 +4266,17 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   <FileText className="w-12 h-12 text-indigo-400 opacity-40 mx-auto mb-3" />
                   <h3 className="text-sm font-bold text-white mb-1">No templates found</h3>
                   <p className="text-xs text-slate-400 mb-4">Create your first reusable email template to save time composing emails.</p>
-                  <button
-                    onClick={() => {
-                      setTemplateFormData({ id: null, name: '', subject: '', category: 'General', bodyHtml: '' });
-                      setTemplateModal(true);
-                    }}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg inline-flex items-center gap-2"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Create Template
-                  </button>
+                  {(currentUser.role !== 'mailbox_user' || currentUser?.permissions?.canCreateTemplates) && (
+                    <button
+                      onClick={() => {
+                        setTemplateFormData({ id: null, name: '', subject: '', category: 'General', bodyHtml: '' });
+                        setTemplateModal(true);
+                      }}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg inline-flex items-center gap-2"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Create Template
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -4245,29 +4323,33 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                             <Send className="w-3 h-3" />
                             <span>Use</span>
                           </button>
-                          <button
-                            onClick={() => {
-                              setTemplateFormData({
-                                id: tpl.id,
-                                name: tpl.name,
-                                subject: tpl.subject,
-                                category: tpl.category || 'General',
-                                bodyHtml: tpl.body_html,
-                              });
-                              setTemplateModal(true);
-                            }}
-                            className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800"
-                            title="Edit Template"
-                          >
-                            <Settings2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteTemplate(tpl.id)}
-                            className="p-1 text-slate-400 hover:text-rose-400 rounded hover:bg-slate-800"
-                            title="Delete Template"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {(currentUser.role !== 'mailbox_user' || currentUser?.permissions?.canEditTemplates) && (
+                            <button
+                              onClick={() => {
+                                setTemplateFormData({
+                                  id: tpl.id,
+                                  name: tpl.name,
+                                  subject: tpl.subject,
+                                  category: tpl.category || 'General',
+                                  bodyHtml: tpl.body_html,
+                                });
+                                setTemplateModal(true);
+                              }}
+                              className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800"
+                              title="Edit Template"
+                            >
+                              <Settings2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {(currentUser.role !== 'mailbox_user' || currentUser?.permissions?.canDeleteTemplates) && (
+                            <button
+                              onClick={() => handleDeleteTemplate(tpl.id)}
+                              className="p-1 text-slate-400 hover:text-rose-400 rounded hover:bg-slate-800"
+                              title="Delete Template"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -5775,47 +5857,73 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 </select>
               </div>
 
-              {/* STORAGE QUOTA ALLOCATION (DYNAMICALLY CAPPED TO COMPANY PLAN LIMIT) */}
+              {/* STORAGE QUOTA ALLOCATION (TYPABLE INPUT + DYNAMIC PRESETS) */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-semibold text-amber-300">
-                    💾 Storage Space Allocation
+                    💾 Storage Space Allocation (MB or GB)
                   </label>
                   <span className="text-[10px] text-slate-400">
-                    Package Max: {(currentUser?.storage_quota_mb ? currentUser.storage_quota_mb / 1024 : 10).toFixed(0)} GB ({currentUser?.storage_quota_mb || 10240} MB)
+                    Max: {(currentUser?.storage_quota_mb ? currentUser.storage_quota_mb / 1024 : 10).toFixed(0)} GB ({currentUser?.storage_quota_mb || 10240} MB)
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <select
-                    value={newMailboxData.quotaMb}
-                    onChange={(e) => setNewMailboxData({ ...newMailboxData, quotaMb: Number(e.target.value) })}
-                    className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
-                  >
-                    {[512, 1024, 2048, 5120, 10240, 20480, 51200]
-                      .filter((mb) => mb <= (currentUser?.storage_quota_mb || 10240))
-                      .map((mb) => (
-                        <option key={mb} value={mb}>
-                          {mb >= 1024 ? `${(mb / 1024).toFixed(0)} GB (${mb} MB)` : `${mb} MB`}
-                        </option>
-                      ))}
-                  </select>
-                  <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg px-3 py-1 text-xs text-slate-300">
-                    <span className="font-mono text-emerald-400 font-bold mr-1">{(newMailboxData.quotaMb / 1024).toFixed(1)}</span> GB allocated
+
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={100}
+                      max={currentUser?.storage_quota_mb || 10240}
+                      value={newMailboxData.quotaMb}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        const maxCap = currentUser?.storage_quota_mb || 10240;
+                        setNewMailboxData({ ...newMailboxData, quotaMb: Math.min(val, maxCap) });
+                      }}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      placeholder="Type MB (e.g. 2048)"
+                    />
+                    <span className="absolute right-2.5 top-2 text-[11px] text-slate-400 font-bold">MB</span>
                   </div>
+
+                  <div className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-300">
+                    <span className="font-mono text-emerald-400 font-bold">{(newMailboxData.quotaMb / 1024).toFixed(2)} GB</span>
+                    <span className="text-[10px] text-slate-400">allocated</span>
+                  </div>
+                </div>
+
+                {/* Quick Preset Buttons */}
+                <div className="flex flex-wrap gap-1">
+                  {[512, 1024, 2048, 5120, 10240]
+                    .filter((mb) => mb <= (currentUser?.storage_quota_mb || 10240))
+                    .map((mb) => (
+                      <button
+                        type="button"
+                        key={mb}
+                        onClick={() => setNewMailboxData({ ...newMailboxData, quotaMb: mb })}
+                        className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
+                          newMailboxData.quotaMb === mb
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 font-bold'
+                            : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:text-white'
+                        }`}
+                      >
+                        {mb >= 1024 ? `${(mb / 1024).toFixed(0)} GB` : `${mb} MB`}
+                      </button>
+                    ))}
                 </div>
               </div>
 
-              {/* INDIVIDUAL USER SIGNATURE */}
+              {/* INDIVIDUAL USER SIGNATURE (TEXT OR HTML) */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-semibold text-indigo-300">
-                    ✍️ User Individual Signature (Optional)
+                    ✍️ User Individual Signature (Supports HTML / Plaintext)
                   </label>
-                  <span className="text-[10px] text-slate-400">Specific to this user</span>
+                  <span className="text-[10px] text-emerald-400 font-mono">HTML Enabled &lt;div&gt;, &lt;b&gt;, &lt;img&gt;</span>
                 </div>
                 <textarea
-                  rows={2}
-                  placeholder="Best regards,&#10;Foysal Ahmed | Senior Developer&#10;Direct: +880 1700-000000"
+                  rows={3}
+                  placeholder="<div style='font-family: Arial;'><b>Best regards,</b><br/>Foysal Ahmed<br/><span style='color: #2563eb;'>Senior Developer</span></div>"
                   value={newMailboxData.signature}
                   onChange={(e) => setNewMailboxData({ ...newMailboxData, signature: e.target.value })}
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-500 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -5883,42 +5991,72 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 </select>
               </div>
 
-              {/* STORAGE QUOTA ALLOCATION (DYNAMICALLY CAPPED TO COMPANY PLAN LIMIT) */}
+              {/* STORAGE QUOTA ALLOCATION (TYPABLE INPUT + DYNAMIC PRESETS) */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-semibold text-amber-300">
-                    💾 Allocated Cloud Storage (GB)
+                    💾 Allocated Cloud Storage (Type MB or GB)
                   </label>
                   <span className="text-[10px] text-slate-400">
-                    Max: {(currentUser?.storage_quota_mb ? currentUser.storage_quota_mb / 1024 : 10).toFixed(0)} GB
+                    Max: {(currentUser?.storage_quota_mb ? currentUser.storage_quota_mb / 1024 : 10).toFixed(0)} GB ({currentUser?.storage_quota_mb || 10240} MB)
                   </span>
                 </div>
-                <select
-                  value={editMailboxForm.quotaMb}
-                  onChange={(e) => setEditMailboxForm({ ...editMailboxForm, quotaMb: Number(e.target.value) })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
-                >
-                  {[512, 1024, 2048, 5120, 10240, 20480, 51200]
+
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={100}
+                      max={currentUser?.storage_quota_mb || 10240}
+                      value={editMailboxForm.quotaMb}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        const maxCap = currentUser?.storage_quota_mb || 10240;
+                        setEditMailboxForm({ ...editMailboxForm, quotaMb: Math.min(val, maxCap) });
+                      }}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                    <span className="absolute right-2.5 top-2 text-[11px] text-slate-400 font-bold">MB</span>
+                  </div>
+
+                  <div className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-300">
+                    <span className="font-mono text-emerald-400 font-bold">{(editMailboxForm.quotaMb / 1024).toFixed(2)} GB</span>
+                    <span className="text-[10px] text-slate-400">allocated</span>
+                  </div>
+                </div>
+
+                {/* Quick Preset Buttons */}
+                <div className="flex flex-wrap gap-1">
+                  {[512, 1024, 2048, 5120, 10240]
                     .filter((mb) => mb <= (currentUser?.storage_quota_mb || 10240))
                     .map((mb) => (
-                      <option key={mb} value={mb}>
-                        {mb >= 1024 ? `${(mb / 1024).toFixed(0)} GB (${mb} MB)` : `${mb} MB`}
-                      </option>
+                      <button
+                        type="button"
+                        key={mb}
+                        onClick={() => setEditMailboxForm({ ...editMailboxForm, quotaMb: mb })}
+                        className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
+                          editMailboxForm.quotaMb === mb
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 font-bold'
+                            : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:text-white'
+                        }`}
+                      >
+                        {mb >= 1024 ? `${(mb / 1024).toFixed(0)} GB` : `${mb} MB`}
+                      </button>
                     ))}
-                </select>
+                </div>
               </div>
 
-              {/* INDIVIDUAL USER SIGNATURE */}
+              {/* INDIVIDUAL USER SIGNATURE (TEXT OR HTML) */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-semibold text-indigo-300">
-                    ✍️ Individual Email Signature
+                    ✍️ Individual Email Signature (Supports HTML / Plaintext)
                   </label>
-                  <span className="text-[10px] text-slate-400">Custom user signature</span>
+                  <span className="text-[10px] text-emerald-400 font-mono">HTML Enabled &lt;div&gt;, &lt;b&gt;, &lt;img&gt;</span>
                 </div>
                 <textarea
                   rows={3}
-                  placeholder="Best regards,&#10;Name | Title&#10;Direct: +880 1700-000000"
+                  placeholder="<div style='font-family: Arial;'><b>Best regards,</b><br/>Name | Title<br/>Direct: +880 1700-000000</div>"
                   value={editMailboxForm.signature}
                   onChange={(e) => setEditMailboxForm({ ...editMailboxForm, signature: e.target.value })}
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-500 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -5942,6 +6080,46 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 </button>
                 <button type="submit" className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white rounded-lg">
                   Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===================== MODAL: EDIT CUSTOM DOMAIN ===================== */}
+      {editDomainModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-6">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+              <div className="flex items-center gap-2">
+                <Globe className="w-5 h-5 text-blue-400" />
+                <h3 className="text-base font-bold text-white">Edit Custom Domain</h3>
+              </div>
+              <button onClick={() => setEditDomainModal(null)} className="text-slate-400 hover:text-white text-sm">✕</button>
+            </div>
+            <form onSubmit={handleUpdateDomain} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Domain Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. branddomain.com"
+                  value={editDomainName}
+                  onChange={(e) => setEditDomainName(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Editing domain name will update DNS records generation and DKIM signatures for this tenant domain.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+                <button type="button" onClick={() => setEditDomainModal(null)} className="px-4 py-2 text-xs text-slate-400 hover:text-white">
+                  Cancel
+                </button>
+                <button type="submit" className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white rounded-lg shadow-lg">
+                  Update Domain
                 </button>
               </div>
             </form>
@@ -7116,88 +7294,223 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 </div>
 
                 {/* Granular Permission Toggles */}
-                <div className="space-y-2.5 pt-2 border-t border-slate-800">
+                <div className="space-y-3 pt-2 border-t border-slate-800">
                   <span className="block text-[11px] font-bold text-slate-300">Allowed Capabilities & Permissions:</span>
 
-                  <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={roleForm.permissions.canSwitchMailbox}
-                      onChange={(e) => setRoleForm({
-                        ...roleForm,
-                        permissions: { ...roleForm.permissions, canSwitchMailbox: e.target.checked },
-                      })}
-                      className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0 w-4 h-4"
-                    />
-                    <div>
-                      <span className="font-semibold block text-amber-300">Switch & View Other Mailboxes</span>
-                      <span className="text-[10px] text-slate-400 block">Allow switching to other company emails from sidebar footer</span>
-                    </div>
-                  </label>
+                  {/* 1. MAILBOX SWITCHING */}
+                  <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800">
+                    <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={roleForm.permissions.canSwitchMailbox}
+                        onChange={(e) => setRoleForm({
+                          ...roleForm,
+                          permissions: { ...roleForm.permissions, canSwitchMailbox: e.target.checked },
+                        })}
+                        className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0 w-4 h-4"
+                      />
+                      <div>
+                        <span className="font-semibold block text-amber-300">Switch & View Other Mailboxes</span>
+                        <span className="text-[10px] text-slate-400 block">Allow switching to other company email accounts from sidebar footer</span>
+                      </div>
+                    </label>
+                  </div>
 
-                  <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={roleForm.permissions.canSendBulk}
-                      onChange={(e) => setRoleForm({
-                        ...roleForm,
-                        permissions: { ...roleForm.permissions, canSendBulk: e.target.checked },
-                      })}
-                      className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0 w-4 h-4"
-                    />
-                    <div>
-                      <span className="font-semibold block text-slate-200">Bulk Campaigns</span>
-                      <span className="text-[10px] text-slate-400 block">Send bulk marketing newsletters</span>
+                  {/* 2. EMAIL TEMPLATES (GRANULAR: CREATE, EDIT, DELETE) */}
+                  <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800 space-y-1.5">
+                    <span className="text-[11px] font-bold text-indigo-300 block">📑 Email Templates Rights:</span>
+                    <div className="grid grid-cols-3 gap-2">
+                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={roleForm.permissions.canCreateTemplates}
+                          onChange={(e) => setRoleForm({
+                            ...roleForm,
+                            permissions: { ...roleForm.permissions, canCreateTemplates: e.target.checked },
+                          })}
+                          className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-0 w-3.5 h-3.5"
+                        />
+                        <span className="text-[11px]">Create</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={roleForm.permissions.canEditTemplates}
+                          onChange={(e) => setRoleForm({
+                            ...roleForm,
+                            permissions: { ...roleForm.permissions, canEditTemplates: e.target.checked },
+                          })}
+                          className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-0 w-3.5 h-3.5"
+                        />
+                        <span className="text-[11px]">Edit</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={roleForm.permissions.canDeleteTemplates}
+                          onChange={(e) => setRoleForm({
+                            ...roleForm,
+                            permissions: { ...roleForm.permissions, canDeleteTemplates: e.target.checked },
+                          })}
+                          className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-0 w-3.5 h-3.5"
+                        />
+                        <span className="text-[11px]">Delete</span>
+                      </label>
                     </div>
-                  </label>
+                  </div>
 
-                  <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={roleForm.permissions.canManageTemplates}
-                      onChange={(e) => setRoleForm({
-                        ...roleForm,
-                        permissions: { ...roleForm.permissions, canManageTemplates: e.target.checked },
-                      })}
-                      className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0 w-4 h-4"
-                    />
-                    <div>
-                      <span className="font-semibold block text-slate-200">Email Templates</span>
-                      <span className="text-[10px] text-slate-400 block">Create and manage email templates</span>
+                  {/* 3. CUSTOM DOMAINS (GRANULAR: ADD, EDIT, DELETE) */}
+                  <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800 space-y-1.5">
+                    <span className="text-[11px] font-bold text-blue-300 block">🌐 Custom Domains Rights:</span>
+                    <div className="grid grid-cols-3 gap-2">
+                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={roleForm.permissions.canAddDomains}
+                          onChange={(e) => setRoleForm({
+                            ...roleForm,
+                            permissions: { ...roleForm.permissions, canAddDomains: e.target.checked },
+                          })}
+                          className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0 w-3.5 h-3.5"
+                        />
+                        <span className="text-[11px]">Add Domain</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={roleForm.permissions.canEditDomains}
+                          onChange={(e) => setRoleForm({
+                            ...roleForm,
+                            permissions: { ...roleForm.permissions, canEditDomains: e.target.checked },
+                          })}
+                          className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0 w-3.5 h-3.5"
+                        />
+                        <span className="text-[11px]">Edit</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={roleForm.permissions.canDeleteDomains}
+                          onChange={(e) => setRoleForm({
+                            ...roleForm,
+                            permissions: { ...roleForm.permissions, canDeleteDomains: e.target.checked },
+                          })}
+                          className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0 w-3.5 h-3.5"
+                        />
+                        <span className="text-[11px]">Delete</span>
+                      </label>
                     </div>
-                  </label>
+                  </div>
 
-                  <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={roleForm.permissions.canDeleteMail}
-                      onChange={(e) => setRoleForm({
-                        ...roleForm,
-                        permissions: { ...roleForm.permissions, canDeleteMail: e.target.checked },
-                      })}
-                      className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0 w-4 h-4"
-                    />
-                    <div>
-                      <span className="font-semibold block text-slate-200">Delete Messages</span>
-                      <span className="text-[10px] text-slate-400 block">Move messages to trash or delete</span>
+                  {/* 4. MAILBOXES (USERS) (GRANULAR: CREATE, EDIT, DELETE) */}
+                  <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800 space-y-1.5">
+                    <span className="text-[11px] font-bold text-emerald-300 block">👥 Mailboxes Provisioning:</span>
+                    <div className="grid grid-cols-3 gap-2">
+                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={roleForm.permissions.canCreateMailboxes}
+                          onChange={(e) => setRoleForm({
+                            ...roleForm,
+                            permissions: { ...roleForm.permissions, canCreateMailboxes: e.target.checked },
+                          })}
+                          className="rounded border-slate-700 bg-slate-900 text-emerald-600 focus:ring-0 w-3.5 h-3.5"
+                        />
+                        <span className="text-[11px]">Create</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={roleForm.permissions.canEditMailboxes}
+                          onChange={(e) => setRoleForm({
+                            ...roleForm,
+                            permissions: { ...roleForm.permissions, canEditMailboxes: e.target.checked },
+                          })}
+                          className="rounded border-slate-700 bg-slate-900 text-emerald-600 focus:ring-0 w-3.5 h-3.5"
+                        />
+                        <span className="text-[11px]">Edit / Space</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={roleForm.permissions.canDeleteMailboxes}
+                          onChange={(e) => setRoleForm({
+                            ...roleForm,
+                            permissions: { ...roleForm.permissions, canDeleteMailboxes: e.target.checked },
+                          })}
+                          className="rounded border-slate-700 bg-slate-900 text-emerald-600 focus:ring-0 w-3.5 h-3.5"
+                        />
+                        <span className="text-[11px]">Delete</span>
+                      </label>
                     </div>
-                  </label>
+                  </div>
 
-                  <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={roleForm.permissions.canManageFolders}
-                      onChange={(e) => setRoleForm({
-                        ...roleForm,
-                        permissions: { ...roleForm.permissions, canManageFolders: e.target.checked },
-                      })}
-                      className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0 w-4 h-4"
-                    />
-                    <div>
-                      <span className="font-semibold block text-slate-200">Custom Folders & Labels</span>
-                      <span className="text-[10px] text-slate-400 block">Create custom webmail folders</span>
-                    </div>
-                  </label>
+                  {/* 5. REST API & OTHER PERMISSIONS */}
+                  <div className="space-y-2 pt-1">
+                    <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={roleForm.permissions.canAccessRestApi}
+                        onChange={(e) => setRoleForm({
+                          ...roleForm,
+                          permissions: { ...roleForm.permissions, canAccessRestApi: e.target.checked },
+                        })}
+                        className="rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-0 w-4 h-4"
+                      />
+                      <div>
+                        <span className="font-semibold block text-emerald-400">REST API Key Access (v1)</span>
+                        <span className="text-[10px] text-slate-400 block">Generate API keys to send emails from external websites/code</span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={roleForm.permissions.canSendBulk}
+                        onChange={(e) => setRoleForm({
+                          ...roleForm,
+                          permissions: { ...roleForm.permissions, canSendBulk: e.target.checked },
+                        })}
+                        className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 w-4 h-4"
+                      />
+                      <div>
+                        <span className="font-semibold block text-slate-200">Bulk Campaigns</span>
+                        <span className="text-[10px] text-slate-400 block">Send bulk marketing newsletters</span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={roleForm.permissions.canDeleteMail}
+                        onChange={(e) => setRoleForm({
+                          ...roleForm,
+                          permissions: { ...roleForm.permissions, canDeleteMail: e.target.checked },
+                        })}
+                        className="rounded border-slate-700 bg-slate-900 text-rose-500 focus:ring-0 w-4 h-4"
+                      />
+                      <div>
+                        <span className="font-semibold block text-slate-200">Delete Messages</span>
+                        <span className="text-[10px] text-slate-400 block">Move messages to trash or delete</span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={roleForm.permissions.canManageFolders}
+                        onChange={(e) => setRoleForm({
+                          ...roleForm,
+                          permissions: { ...roleForm.permissions, canManageFolders: e.target.checked },
+                        })}
+                        className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0 w-4 h-4"
+                      />
+                      <div>
+                        <span className="font-semibold block text-slate-200">Custom Folders & Labels</span>
+                        <span className="text-[10px] text-slate-400 block">Create custom webmail folders</span>
+                      </div>
+                    </label>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between pt-3 border-t border-slate-800">
@@ -7213,9 +7526,16 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                           canSendBulk: false,
                           canDeleteMail: true,
                           canManageFolders: true,
-                          canManageTemplates: false,
-                          canManageSettings: false,
-                          canManageMailboxes: false,
+                          canAddDomains: false,
+                          canEditDomains: false,
+                          canDeleteDomains: false,
+                          canCreateTemplates: false,
+                          canEditTemplates: false,
+                          canDeleteTemplates: false,
+                          canAccessRestApi: false,
+                          canCreateMailboxes: false,
+                          canEditMailboxes: false,
+                          canDeleteMailboxes: false,
                         },
                       })}
                       className="text-xs text-slate-400 hover:text-white"
@@ -7286,14 +7606,21 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                               id: r.id,
                               name: r.name,
                               description: r.description || '',
-                              permissions: r.permissions || {
-                                canSwitchMailbox: false,
-                                canSendBulk: false,
-                                canDeleteMail: true,
-                                canManageFolders: true,
-                                canManageTemplates: false,
-                                canManageSettings: false,
-                                canManageMailboxes: false,
+                              permissions: {
+                                canSwitchMailbox: r.permissions?.canSwitchMailbox || false,
+                                canSendBulk: r.permissions?.canSendBulk || false,
+                                canDeleteMail: r.permissions?.canDeleteMail ?? true,
+                                canManageFolders: r.permissions?.canManageFolders ?? true,
+                                canAddDomains: r.permissions?.canAddDomains || false,
+                                canEditDomains: r.permissions?.canEditDomains || false,
+                                canDeleteDomains: r.permissions?.canDeleteDomains || false,
+                                canCreateTemplates: r.permissions?.canCreateTemplates || false,
+                                canEditTemplates: r.permissions?.canEditTemplates || false,
+                                canDeleteTemplates: r.permissions?.canDeleteTemplates || false,
+                                canAccessRestApi: r.permissions?.canAccessRestApi || false,
+                                canCreateMailboxes: r.permissions?.canCreateMailboxes || false,
+                                canEditMailboxes: r.permissions?.canEditMailboxes || false,
+                                canDeleteMailboxes: r.permissions?.canDeleteMailboxes || false,
                               },
                             })}
                             className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800"

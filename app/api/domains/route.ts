@@ -83,6 +83,32 @@ export async function POST(request: Request) {
   }
 }
 
+// PUT: Edit/Update an existing custom domain
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const { domainId, name } = body;
+
+    if (!domainId || !name || !name.includes('.')) {
+      return NextResponse.json({ success: false, message: 'Please provide a valid domainId and domain name.' }, { status: 400 });
+    }
+
+    const cleanName = name.toLowerCase().trim();
+
+    // Check if another domain with same name exists
+    const [existing]: any = await pool.query('SELECT id FROM virtual_domains WHERE name = ? AND id != ?', [cleanName, domainId]);
+    if (existing.length > 0) {
+      return NextResponse.json({ success: false, message: 'Another domain with this name already exists.' }, { status: 409 });
+    }
+
+    await pool.query('UPDATE virtual_domains SET name = ? WHERE id = ?', [cleanName, domainId]);
+
+    return NextResponse.json({ success: true, message: 'Domain updated successfully' });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  }
+}
+
 // DELETE: Delete a custom domain
 export async function DELETE(request: Request) {
   try {
