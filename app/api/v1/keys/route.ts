@@ -2,9 +2,30 @@ import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import crypto from 'crypto';
 
+// Ensure table exists helper
+async function ensureApiKeysTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS api_keys (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      name VARCHAR(150) NOT NULL,
+      api_key VARCHAR(255) NOT NULL UNIQUE,
+      sender_email VARCHAR(255) NULL,
+      allowed_origins TEXT NULL,
+      status ENUM('active', 'revoked') DEFAULT 'active',
+      total_requests INT DEFAULT 0,
+      last_used_at TIMESTAMP NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX (user_id),
+      INDEX (api_key)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `);
+}
+
 // GET: Retrieve all API keys for the current user
 export async function GET(request: Request) {
   try {
+    await ensureApiKeysTable();
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
@@ -29,6 +50,7 @@ export async function GET(request: Request) {
 // POST: Generate or Revoke API keys
 export async function POST(request: Request) {
   try {
+    await ensureApiKeysTable();
     const body = await request.json();
     const { action = 'create', userId, name, senderEmail, keyId } = body;
 
@@ -80,3 +102,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
+

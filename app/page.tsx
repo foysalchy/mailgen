@@ -6898,6 +6898,89 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
         </div>
       )}
 
+      {/* ===================== DRAWER: GENERATE REST API KEY ===================== */}
+      {newKeyModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex justify-end">
+          <div className="bg-slate-900 border-l border-slate-800 w-full max-w-md h-full shadow-2xl flex flex-col p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+              <div className="flex items-center gap-2">
+                <KeyRound className="w-5 h-5 text-[#925ce9]" />
+                <div>
+                  <h3 className="text-base font-bold text-white">Generate REST API Key</h3>
+                  <p className="text-xs text-slate-400">Send transactional emails programmatically via HTTP</p>
+                </div>
+              </div>
+              <button onClick={() => setNewKeyModal(false)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={async (e) => {
+              await handleCreateApiKey(e);
+              setNewKeyModal(false);
+            }} className="space-y-4 flex-1 flex flex-col">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Key Name / Application *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. WooCommerce Store or CRM Backend"
+                  value={newKeyName}
+                  onChange={(e) => setNewKeyName(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 px-3 py-2 text-xs text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-[#925ce9]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Default Sender Email (Optional)</label>
+                <select
+                  value={newKeySender}
+                  onChange={(e) => setNewKeySender(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 px-3 py-2 text-xs text-white rounded-lg focus:outline-none"
+                >
+                  <option value="">Any verified domain mailbox</option>
+                  {mailboxes.map((m) => (
+                    <option key={m.id} value={m.email}>
+                      {m.email} ({m.full_name || 'Mailbox'})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Optional. If selected, emails sent with this key will default to this sender identity.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2 mt-auto">
+                <span className="text-[11px] font-bold text-emerald-400 block">⚡ Ready to use endpoint:</span>
+                <code className="text-[10px] font-mono text-slate-300 block bg-slate-900 p-2 rounded border border-slate-800">
+                  POST /api/v1/send
+                </code>
+                <p className="text-[10px] text-slate-400 leading-relaxed">
+                  Your generated API key will start with <code className="text-[#925ce9]">mbx_live_</code> and can be passed in the <code className="text-slate-300">Authorization: Bearer</code> header.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setNewKeyModal(false)}
+                  className="px-4 py-2 text-xs text-slate-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-[#925ce9] hover:bg-[#7e43e5] text-xs font-bold text-white rounded-xl shadow-lg shadow-[#925ce9]/30 transition-all flex items-center gap-1.5"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>Generate Key</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* ===================== DRAWER: UPGRADE PACKAGE & GENERATE INVOICE ===================== */}
       {upgradeModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex justify-end">
