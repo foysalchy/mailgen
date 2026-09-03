@@ -122,6 +122,7 @@ export default function MailboxApp() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [mobileFolderDrawerOpen, setMobileFolderDrawerOpen] = useState(false);
 
   // Dashboard Navigation tabs: 'overview' | 'webmail' | 'domains' | 'mailboxes' | 'bulk' | 'subscriptions' | 'superadmin' | 'subusers' | 'apikeys' | 'templates' | 'billing' | 'settings'
   const [activeTab, setActiveTabState] = useState<'overview' | 'webmail' | 'domains' | 'mailboxes' | 'bulk' | 'subscriptions' | 'superadmin' | 'subusers' | 'apikeys' | 'templates' | 'billing' | 'settings'>('overview');
@@ -3736,13 +3737,35 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
         {/* ===================== VIEW 1: WEBMAIL CLIENT ===================== */}
         {activeTab === 'webmail' && (
           <div className="flex-1 flex w-full overflow-hidden relative">
-            {/* Folder & Labels sidebar (Collapsible on mobile) */}
-            <div className={`w-60 bg-slate-900/70 border-r border-slate-800 p-3 flex flex-col justify-between shrink-0 overflow-y-auto ${
-              selectedMessage ? 'hidden lg:flex' : 'hidden md:flex'
-            }`}>
+            {/* Mobile Webmail Folder Drawer Backdrop */}
+            {mobileFolderDrawerOpen && (
+              <div
+                onClick={() => setMobileFolderDrawerOpen(false)}
+                className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 md:hidden animate-fadeIn"
+              />
+            )}
+
+            {/* Folder & Labels sidebar (Collapsible on mobile via Drawer) */}
+            <div className={`fixed md:relative inset-y-0 left-0 z-50 md:z-auto w-64 bg-slate-900 border-r border-slate-800 p-3 flex flex-col justify-between shrink-0 overflow-y-auto transition-transform duration-300 shadow-2xl md:shadow-none ${
+              mobileFolderDrawerOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+            } ${selectedMessage ? 'hidden lg:flex' : 'flex'}`}>
               <div>
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800 md:hidden">
+                  <div className="flex items-center gap-2">
+                    <Inbox className="w-4 h-4 text-[#925ce9]" />
+                    <span className="font-bold text-xs text-white">Mailbox Folders</span>
+                  </div>
+                  <button
+                    onClick={() => setMobileFolderDrawerOpen(false)}
+                    className="p-1 text-slate-400 hover:text-white rounded-lg"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
                 <button
                   onClick={() => {
+                    setMobileFolderDrawerOpen(false);
                     if (mailboxes.length === 0) {
                       toast.warning('Please create a mailbox first in the Mailboxes tab.');
                       setActiveTab('mailboxes');
@@ -3789,6 +3812,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                           setCurrentFolder(folder.id);
                           setActiveCustomFolder(null);
                           setActiveLabel(null);
+                          setMobileFolderDrawerOpen(false);
                         }}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                           isActive ? 'bg-slate-800 text-blue-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
@@ -3814,7 +3838,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     <span className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Custom Folders</span>
                     {(currentUser?.role !== 'mailbox_user' || (currentUser?.permissions?.canCreateFolders ?? currentUser?.permissions?.canManageFolders)) && (
                       <button
-                        onClick={() => setCreateFolderModal(true)}
+                        onClick={() => {
+                          setMobileFolderDrawerOpen(false);
+                          setCreateFolderModal(true);
+                        }}
                         className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
                         title="Create New Folder"
                       >
@@ -3839,6 +3866,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                               onClick={() => {
                                 setActiveCustomFolder(f);
                                 setActiveLabel(null);
+                                setMobileFolderDrawerOpen(false);
                               }}
                               className="flex items-center gap-2.5 truncate flex-1 text-left"
                             >
@@ -3870,7 +3898,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     <span className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Tags & Labels</span>
                     {(currentUser?.role !== 'mailbox_user' || (currentUser?.permissions?.canCreateTags ?? currentUser?.permissions?.canManageTags)) && (
                       <button
-                        onClick={() => setCreateLabelModal(true)}
+                        onClick={() => {
+                          setMobileFolderDrawerOpen(false);
+                          setCreateLabelModal(true);
+                        }}
                         className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
                         title="Create New Tag / Label"
                       >
@@ -3895,6 +3926,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                               onClick={() => {
                                 setActiveLabel(l);
                                 setActiveCustomFolder(null);
+                                setMobileFolderDrawerOpen(false);
                               }}
                               className="flex items-center gap-2.5 truncate flex-1 text-left"
                             >
@@ -3926,17 +3958,29 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
             <div className={`w-full md:w-80 lg:w-88 border-r border-slate-800 flex flex-col shrink-0 bg-slate-900/30 ${
               selectedMessage ? 'hidden md:flex' : 'flex'
             }`}>
-              <div className="p-3 border-b border-slate-800">
-                <div className="relative">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                  <input
-                    type="text"
-                    placeholder="Search in folder..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && selectedMailbox && fetchMessages(selectedMailbox.id)}
-                    className="w-full bg-slate-800/60 border border-slate-700/60 pl-9 pr-3 py-1.5 text-xs rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
+              {/* Top Search & Mobile Folder Selector Bar */}
+              <div className="p-3 border-b border-slate-800 space-y-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setMobileFolderDrawerOpen(true)}
+                    className="md:hidden px-2.5 py-1.5 bg-[#925ce9]/15 hover:bg-[#925ce9]/25 text-[#925ce9] border border-[#925ce9]/30 rounded-lg text-xs font-bold flex items-center gap-1.5 shrink-0"
+                    title="View Folders & Tags"
+                  >
+                    <Folder className="w-3.5 h-3.5" />
+                    <span className="capitalize">{activeLabel ? activeLabel.name : activeCustomFolder ? activeCustomFolder.name : currentFolder}</span>
+                  </button>
+
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2" />
+                    <input
+                      type="text"
+                      placeholder="Search mail..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && selectedMailbox && fetchMessages(selectedMailbox.id)}
+                      className="w-full bg-slate-800/60 border border-slate-700/60 pl-9 pr-3 py-1.5 text-xs rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -4065,6 +4109,39 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   ))
                 )}
               </div>
+
+              {/* Mobile Floating Compose Button (FAB) */}
+              {!selectedMessage && (
+                <div className="md:hidden fixed bottom-6 right-6 z-30">
+                  <button
+                    onClick={() => {
+                      if (mailboxes.length === 0) {
+                        toast.warning('Please create a mailbox first in the Mailboxes tab.');
+                        setActiveTab('mailboxes');
+                        return;
+                      }
+                      const activeBox = selectedMailbox || mailboxes[0];
+                      const activeSignature = activeBox?.signature || companySettingsForm.emailSignature || '';
+                      const defaultFooter = companySettingsForm.emailFooter ? `\n\n---\n${companySettingsForm.emailFooter}` : '';
+                      
+                      if (activeSignature || defaultFooter) {
+                        const initialBodyText = `\n\n${activeSignature}${defaultFooter}`;
+                        const initialBodyHtml = `<br/><br/><div style="color: #64748b; font-size: 13px; font-family: sans-serif; border-top: 1px solid #cbd5e1; padding-top: 8px;">${activeSignature.replace(/\n/g, '<br/>')}${companySettingsForm.emailFooter ? `<div style="font-size: 11px; color: #94a3b8; margin-top: 8px;">${companySettingsForm.emailFooter.replace(/\n/g, '<br/>')}</div>` : ''}</div>`;
+                        setComposeData((prev) => ({
+                          ...prev,
+                          bodyText: prev.bodyText || initialBodyText,
+                          bodyHtml: prev.bodyHtml || initialBodyHtml,
+                        }));
+                      }
+                      setComposeModal(true);
+                    }}
+                    className="flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-[#925ce9] to-indigo-600 text-white rounded-full shadow-2xl shadow-[#925ce9]/50 font-bold text-xs transform active:scale-95 transition-all"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>Compose</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Email reader pane (Gmail Style Conversation Thread - responsive with Mobile Back button) */}
