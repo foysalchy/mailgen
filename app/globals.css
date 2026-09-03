@@ -153,6 +153,26 @@ html:not(.dark) .text-amber-500 {
   color: #92400e !important; /* amber-800 */
 }
 
+/* Fix 1.1: Emerald API Key Generated Banner & Badges in Light Mode */
+html:not(.dark) .bg-emerald-950\/40,
+html:not(.dark) .bg-emerald-950\/60,
+html:not(.dark) .bg-emerald-500\/10,
+html:not(.dark) .bg-emerald-500\/20 {
+  background-color: #ecfdf5 !important; /* emerald-50 */
+  border-color: #a7f3d0 !important;     /* emerald-200 */
+}
+
+html:not(.dark) .text-emerald-300,
+html:not(.dark) .text-emerald-400 {
+  color: #047857 !important; /* emerald-700 - high contrast dark green on white */
+}
+
+html:not(.dark) .bg-emerald-950\/40 code,
+html:not(.dark) .bg-slate-900\/90 code {
+  color: #065f46 !important;
+  background-color: #ffffff !important;
+}
+
 /* Fix 2: Quota Breakdown & Password Change Cards in Light Mode (fixes gray-on-gray background & text) */
 html:not(.dark) .bg-slate-950\/60,
 html:not(.dark) .bg-slate-950\/70,

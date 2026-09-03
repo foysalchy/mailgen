@@ -362,7 +362,7 @@ export default function MailboxApp() {
       fetchRoles(currentUser.company_id);
       fetchBulkData(currentUser.id);
       fetchOrganization(currentUser.id, selectedMailbox?.id);
-      fetchApiKeys(currentUser.id);
+      fetchApiKeys(currentUser.id, currentUser.company_id);
       fetchTemplates(currentUser.id, currentUser.company_id);
       fetchBilling(currentUser.id);
       fetchSettings(currentUser.id);
@@ -766,9 +766,11 @@ export default function MailboxApp() {
     toast.success(`Applied template: "${tpl.name}" to compose window!`);
   };
 
-  const fetchApiKeys = async (userId: number) => {
+  const fetchApiKeys = async (userId: number, companyId?: number) => {
     try {
-      const res = await fetch(`/api/v1/keys?userId=${userId}`);
+      const cid = companyId || currentUser?.company_id;
+      const url = cid ? `/api/v1/keys?userId=${userId}&companyId=${cid}` : `/api/v1/keys?userId=${userId}`;
+      const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
         setApiKeys(data.apiKeys || []);
@@ -789,6 +791,7 @@ export default function MailboxApp() {
         body: JSON.stringify({
           action: 'create',
           userId: currentUser.id,
+          companyId: currentUser.company_id || undefined,
           name: newKeyName.trim(),
           senderEmail: newKeySender.trim() || undefined,
         }),
@@ -798,7 +801,7 @@ export default function MailboxApp() {
         setJustGeneratedKey(data.apiKey.api_key);
         setNewKeyName('');
         setNewKeySender('');
-        fetchApiKeys(currentUser.id);
+        fetchApiKeys(currentUser.id, currentUser.company_id);
         toast.success('API Key generated successfully! Copy it now.');
       } else {
         toast.error(data.message || 'Failed to create API key');
@@ -817,7 +820,7 @@ export default function MailboxApp() {
       });
       const data = await res.json();
       if (data.success && currentUser?.id) {
-        fetchApiKeys(currentUser.id);
+        fetchApiKeys(currentUser.id, currentUser.company_id);
         toast.info('API Key has been revoked');
       }
     } catch (err) {
@@ -835,7 +838,7 @@ export default function MailboxApp() {
       });
       const data = await res.json();
       if (data.success && currentUser?.id) {
-        fetchApiKeys(currentUser.id);
+        fetchApiKeys(currentUser.id, currentUser.company_id);
         toast.success('API Key deleted');
       }
     } catch (err) {
@@ -2745,7 +2748,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               <button
                 onClick={() => {
                   setActiveTab('apikeys');
-                  if (currentUser?.id) fetchApiKeys(currentUser.id);
+                  if (currentUser?.id) fetchApiKeys(currentUser.id, currentUser.company_id);
                 }}
                 title="Email REST API (v1)"
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
