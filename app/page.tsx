@@ -1264,30 +1264,6 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
     }
   };
 
-  const handleVerifyDns = async (domainId: number) => {
-    setVerifyingDns(true);
-    try {
-      const res = await fetch('/api/domains/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domainId }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        if (currentUser?.id) fetchDomains(currentUser.id);
-        if (data.isVerified) {
-          toast.success('🎉 Domain DNS verified successfully! MX & SPF records detected.');
-        } else {
-          toast.info('DNS records still propagating. Please ensure your MX and SPF TXT records are added.');
-        }
-      }
-    } catch (err: any) {
-      toast.error(err.message || 'Error checking DNS');
-    } finally {
-      setVerifyingDns(false);
-    }
-  };
-
   const fetchAdminData = async () => {
     try {
       const res = await fetch('/api/admin');
