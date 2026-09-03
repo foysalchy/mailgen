@@ -128,6 +128,12 @@ async function run() {
     try {
       await connection.query('ALTER TABLE virtual_users ADD COLUMN signature LONGTEXT NULL AFTER full_name');
     } catch (e) {}
+    try {
+      await connection.query("ALTER TABLE virtual_users ADD COLUMN role VARCHAR(50) DEFAULT 'user'");
+    } catch (e) {}
+    try {
+      await connection.query('ALTER TABLE virtual_users ADD COLUMN permissions_json LONGTEXT NULL');
+    } catch (e) {}
 
     // 5. Virtual Aliases & Forwarders Table
     await connection.query(`

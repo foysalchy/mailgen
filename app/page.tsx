@@ -2250,69 +2250,57 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               <span>Webmail Client</span>
             </button>
 
-            <button
-              onClick={() => setActiveTab('domains')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'domains' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              <Globe className="w-4 h-4" />
-              <span>Custom Domains</span>
-              <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">{domains.length}</span>
-            </button>
+            {currentUser.role !== 'mailbox_user' && (
+              <>
+                <button
+                  onClick={() => setActiveTab('domains')}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    activeTab === 'domains' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Globe className="w-4 h-4" />
+                  <span>Custom Domains</span>
+                  <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">{domains.length}</span>
+                </button>
 
-            <button
-              onClick={() => setActiveTab('mailboxes')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'mailboxes' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              <span>Mailboxes (Users)</span>
-              <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">
-                {mailboxes.length}{currentUser.max_mailboxes ? `/${currentUser.max_mailboxes}` : ''}
-              </span>
-            </button>
+                <button
+                  onClick={() => setActiveTab('mailboxes')}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    activeTab === 'mailboxes' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  <span>Mailboxes (Users)</span>
+                  <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">
+                    {mailboxes.length}{currentUser.max_mailboxes ? `/${currentUser.max_mailboxes}` : ''}
+                  </span>
+                </button>
 
-            <button
-              onClick={() => setActiveTab('bulk')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'bulk' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Bulk Mail Campaign</span>
-            </button>
+                <button
+                  onClick={() => setActiveTab('bulk')}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    activeTab === 'bulk' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <span>Bulk Mail Campaign</span>
+                </button>
 
-            {currentUser.role !== 'sub_user' && (
-              <button
-                onClick={() => {
-                  setActiveTab('subusers' as any);
-                  if (currentUser?.id) fetchSubUsers(currentUser.id);
-                }}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === ('subusers' as any) ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                }`}
-              >
-                <Users className="w-4 h-4 text-cyan-400" />
-                <span>Sub-Users & Roles</span>
-                <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">{subUsers.length}</span>
-              </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('apikeys');
+                    if (currentUser?.id) fetchApiKeys(currentUser.id);
+                  }}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    activeTab === 'apikeys' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <KeyRound className="w-4 h-4 text-emerald-400" />
+                  <span>Email REST API</span>
+                  <span className="ml-auto text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-mono">v1</span>
+                </button>
+              </>
             )}
-
-            <button
-              onClick={() => {
-                setActiveTab('apikeys');
-                if (currentUser?.id) fetchApiKeys(currentUser.id);
-              }}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'apikeys' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              <KeyRound className="w-4 h-4 text-emerald-400" />
-              <span>Email REST API</span>
-              <span className="ml-auto text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-mono">v1</span>
-            </button>
 
             <button
               onClick={() => {
@@ -2328,23 +2316,25 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">{emailTemplates.length}</span>
             </button>
 
-            <button
-              onClick={() => {
-                setActiveTab('billing');
-                if (currentUser?.id) fetchBilling(currentUser.id);
-              }}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'billing' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              <Receipt className="w-4 h-4 text-amber-400" />
-              <span>Billing & Invoices</span>
-              {billingSummary?.pendingUpgrade && (
-                <span className="ml-auto text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-bold animate-pulse">
-                  Pending
-                </span>
-              )}
-            </button>
+            {currentUser.role !== 'mailbox_user' && (
+              <button
+                onClick={() => {
+                  setActiveTab('billing');
+                  if (currentUser?.id) fetchBilling(currentUser.id);
+                }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'billing' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <Receipt className="w-4 h-4 text-amber-400" />
+                <span>Billing & Invoices</span>
+                {billingSummary?.pendingUpgrade && (
+                  <span className="ml-auto text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-bold animate-pulse">
+                    Pending
+                  </span>
+                )}
+              </button>
+            )}
 
             {(currentUser.role === 'admin' || currentUser.role === 'superadmin') && (
               <button

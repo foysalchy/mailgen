@@ -24,11 +24,31 @@ export async function GET(request: Request) {
       [userId]
     );
 
-    if (rows.length === 0) {
-      return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
+    let user = rows[0];
+    let isMailboxUser = false;
+
+    if (!user) {
+      const [vRows]: any = await pool.query(
+        `SELECT v.id, v.full_name as name, v.email, 'mailbox_user' as role, v.company_id, 'active' as user_status,
+                v.signature as email_signature,
+                c.name as company_name, c.business_email, c.phone, c.address, c.status as company_status,
+                c.email_footer,
+                p.name as plan_name
+         FROM virtual_users v
+         LEFT JOIN companies c ON v.company_id = c.id
+         LEFT JOIN plans p ON c.plan_id = p.id
+         WHERE v.id = ?`,
+        [userId]
+      );
+      if (vRows.length > 0) {
+        user = vRows[0];
+        isMailboxUser = true;
+      }
     }
 
-    const user = rows[0];
+    if (!user) {
+      return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
+    }
 
     return NextResponse.json({
       success: true,
@@ -39,6 +59,7 @@ export async function GET(request: Request) {
         role: user.role,
         companyId: user.company_id,
         planName: user.plan_name,
+        signature: user.email_signature || '',
       },
       company: {
         id: user.company_id,
@@ -68,24 +89,72 @@ export async function POST(request: Request) {
 
     // 1. Fetch user to verify permissions
     const [uRows]: any = await pool.query('SELECT * FROM users WHERE id = ?', [userId]);
-    if (uRows.length === 0) {
+    let currentUser = uRows[0];
+    let isMailboxUser = false;
+
+    if (!currentUser) {
+      const [vRows]: any = await pool.query('SELECT * FROM virtual_users WHERE id = ?', [userId]);
+      if (vRows.length > 0) {
+        currentUser = vRows[0];
+        isMailboxUser = true;
+      }
+    }
+
+    if (!currentUser) {
       return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
     }
-    const currentUser = uRows[0];
     const companyId = currentUser.company_id;
 
     // -------------------------------------------------------------
-    // ACTION 1: UPDATE USER PROFILE (Name, Email, Password)
+    // ACTION 1: UPDATE USER PROFILE (Name, Email, Signature, Password)
     // -------------------------------------------------------------
     if (action === 'update_profile') {
-      const { name, email, currentPassword, newPassword } = body;
+      const { name, email, signature, currentPassword, newPassword } = body;
 
-      if (!name || !email) {
-        return NextResponse.json({ success: false, message: 'Name and Email are required' }, { status: 400 });
+      if (!name) {
+        return NextResponse.json({ success: false, message: 'Name is required' }, { status: 400 });
       }
 
-      const cleanEmail = email.toLowerCase().trim();
+      const cleanEmail = (email || currentUser.email).toLowerCase().trim();
 
+      // If user is a virtual_user mailbox account
+      if (isMailboxUser) {
+        let updatedPassword = currentUser.password;
+        if (newPassword && newPassword.trim()) {
+          if (!currentPassword) {
+            return NextResponse.json({ success: false, message: 'Current password is required to change password' }, { status: 400 });
+          }
+          const rawHash = currentUser.password || '';
+          const cleanHash = rawHash.replace(/^\{BLF-CRYPT\}/i, '');
+          const isMatch = await bcrypt.compare(currentPassword, cleanHash).catch(() => false) || rawHash === currentPassword || cleanHash === currentPassword;
+          if (!isMatch) {
+            return NextResponse.json({ success: false, message: 'Incorrect current password' }, { status: 403 });
+          }
+
+          const salt = await bcrypt.genSalt(10);
+          const hashedPassword = await bcrypt.hash(newPassword, salt);
+          updatedPassword = `{BLF-CRYPT}${hashedPassword}`;
+        }
+
+        await pool.query(
+          'UPDATE virtual_users SET full_name = ?, signature = ?, password = ? WHERE id = ?',
+          [name.trim(), signature || '', updatedPassword, userId]
+        );
+
+        return NextResponse.json({
+          success: true,
+          user: {
+            id: currentUser.id,
+            name: name.trim(),
+            email: currentUser.email,
+            role: 'mailbox_user',
+            signature: signature || '',
+          },
+          message: 'Mailbox profile, individual signature, and password updated successfully!',
+        });
+      }
+
+      // If standard users table account
       // Check if email changed and if new email already in use
       if (cleanEmail !== currentUser.email) {
         const [existing]: any = await pool.query('SELECT id FROM users WHERE email = ? AND id != ?', [cleanEmail, userId]);
@@ -94,7 +163,6 @@ export async function POST(request: Request) {
         }
       }
 
-      // If user wants to change password
       let updatedPasswordHash = currentUser.password_hash;
       if (newPassword && newPassword.trim()) {
         if (!currentPassword) {
@@ -114,7 +182,6 @@ export async function POST(request: Request) {
         updatedPasswordHash = await bcrypt.hash(newPassword, salt);
       }
 
-      // Update users table
       await pool.query(
         'UPDATE users SET name = ?, email = ?, password_hash = ? WHERE id = ?',
         [name.trim(), cleanEmail, updatedPasswordHash, userId]
