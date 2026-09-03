@@ -374,6 +374,9 @@ export default function MailboxApp() {
       document.documentElement.classList.add('dark');
     }
 
+    // Always release auth checking state immediately
+    setAuthChecking(false);
+
     // Read URL hash on load (e.g. #domains, #webmail, #mailboxes, #settings, etc.)
     if (typeof window !== 'undefined') {
       const rawHash = window.location.hash.replace('#', '').trim();
@@ -392,8 +395,6 @@ export default function MailboxApp() {
       window.addEventListener('hashchange', handleHashChange);
       return () => window.removeEventListener('hashchange', handleHashChange);
     }
-
-    setAuthChecking(false);
   }, []);
 
   const toggleTheme = () => {
