@@ -1,35 +1,34 @@
 # 🚀 MailBox Pro — Complete Production VPS Deployment Guide
 
-This guide details how to deploy **MailBox Pro (Multi-Tenant SaaS Webmail & VPS Mail Engine)** onto any fresh **Ubuntu 22.04 / 24.04 LTS** server (e.g., Hostinger, DigitalOcean, Hetzner, AWS) without manual hassle.
+This guide details how to deploy **MailBox Pro (Multi-Tenant SaaS Webmail & VPS Mail Engine)** onto any fresh **Ubuntu 22.04 / 24.04 LTS** server (e.g., Hostinger, DigitalOcean, Hetzner, AWS) with 100% Inbox deliverability (Gmail / Yahoo / Outlook).
 
 ---
 
-## 📋 Prerequisites & DNS Records
-Before starting, point your domain records in **Cloudflare** (or your DNS registrar) to your VPS IP:
+## 📋 1. Main Server Domain DNS Setup (e.g. `kidukart.com`)
+Before running setup on your VPS, configure these DNS records on your main domain at **Cloudflare** (or your registrar):
 
 | Record Type | Host / Name | Target / Value | Proxy Status | Priority | Purpose |
 |---|---|---|---|---|---|
 | **A** | `@` | `YOUR_VPS_IP` | **DNS only (Gray Cloud ☁️)** | - | Main Web Platform |
 | **A** | `mail` | `YOUR_VPS_IP` | **DNS only (Gray Cloud ☁️)** | - | Mail Engine Hostname |
 | **MX** | `@` | `mail.yourdomain.com` | **DNS only (Gray Cloud ☁️)** | `10` | Inbound Mail Routing |
-| **TXT (SPF)** | `@` | `v=spf1 ip4:YOUR_VPS_IP ~all` | **DNS only (Gray Cloud ☁️)** | - | SPF Authentication |
-| **TXT (DMARC)** | `_dmarc` | `v=DMARC1; p=none; sp=none;` | **DNS only (Gray Cloud ☁️)** | - | Anti-Spoofing Policy |
+| **TXT (SPF)** | `@` | `v=spf1 ip4:YOUR_VPS_IP ~all` | **DNS only (Gray Cloud ☁️)** | - | SPF Authentication (IPv4) |
+| **TXT (DMARC)** | `_dmarc` | `v=DMARC1; p=none; sp=none;` | **DNS only (Gray Cloud ☁️)** | - | Anti-Spoofing & DMARC Policy |
 
-> ⚠️ **Hostinger PTR / Reverse DNS Note**: In your VPS Control Panel ➔ IP Management, set PTR for `YOUR_VPS_IP` to `mail.yourdomain.com` to prevent Gmail spam.
+> ⚠️ **Hostinger PTR / Reverse DNS Note**: In your VPS Control Panel ➔ **IP Management / Reverse DNS**, set PTR for `YOUR_VPS_IP` to: **`mail.yourdomain.com`**. This is mandatory for Gmail acceptance.
 
 ---
 
-## ⚡ Step-by-Step Installation (On Fresh VPS)
+## ⚡ 2. Automated VPS Installation (Fresh Server)
 
 ### 1️⃣ Clone Repository
 ```bash
-# Clone to /var/www/html/mailbox
 git clone https://github.com/foysalchy/mailgen.git /var/www/html/mailbox
 cd /var/www/html/mailbox
 ```
 
 ### 2️⃣ Run Automated VPS Mail Engine Setup
-This script automatically installs Postfix (MTA), Dovecot (IMAP/POP3), Node.js 20, PM2, UFW firewall rules, and configures the incoming pipe delivery daemon:
+This script automatically installs Postfix (MTA with IPv4 forced routing), Dovecot (IMAP/POP3), Node.js 20, PM2, UFW firewall rules, and incoming pipe delivery daemon:
 ```bash
 chmod +x scripts/vps-mailserver-setup.sh
 sudo ./scripts/vps-mailserver-setup.sh
@@ -50,7 +49,7 @@ MAIL_SERVER_HOST="mail.yourdomain.com"
 EOF
 ```
 
-### 4️⃣ Install Dependencies & Initialize Database Schema
+### 4️⃣ Install Dependencies & Run Database Migrations
 ```bash
 cd /var/www/html/mailbox
 npm install
@@ -59,6 +58,7 @@ npm install
 node scripts/setup-db.js
 node scripts/migrate-saas-multitenant.js
 node scripts/migrate-mail-limits-overages.js
+node scripts/add-invoices-table.js
 ```
 
 ### 5️⃣ Build Next.js & Start with PM2
@@ -71,7 +71,7 @@ pm2 save
 
 ---
 
-## 🌐 Web Server & Reverse Proxy Setup
+## 🌐 3. Web Server & Reverse Proxy Setup
 
 ### Option A: If using Apache (with phpMyAdmin / LAMP)
 ```bash
@@ -127,7 +127,7 @@ sudo systemctl reload nginx
 
 ---
 
-## 🔒 Install Free SSL Certificate (HTTPS)
+## 🔒 4. Install Free SSL Certificate (HTTPS)
 ```bash
 # If using Apache:
 sudo certbot --apache -d yourdomain.com -d mail.yourdomain.com --non-interactive --agree-tos -m admin@yourdomain.com
@@ -138,35 +138,24 @@ sudo certbot --nginx -d yourdomain.com -d mail.yourdomain.com --non-interactive 
 
 ---
 
-## 🔑 Default Super Admin Login Credentials
-- **Email**: `foysal@example.com`
-- **Password**: `password123`
+## 🏷️ 5. Tenant Custom Domains DNS Guide (e.g. `dorja.io`)
+
+Whenever a client or tenant connects their custom domain (e.g. `dorja.io`), they do **NOT** need to move their website hosting IP. They only need to add 4 records in Cloudflare:
+
+| Record Type | Name / Host | Target / Value | Priority | Cloudflare Proxy | Purpose |
+|---|---|---|---|---|---|
+| **MX** | `@` | `mail.yourdomain.com` | `10` | **DNS only (Gray ☁️)** | Inbound Email to VPS |
+| **TXT (SPF)** | `@` | `v=spf1 ip4:YOUR_VPS_IP ~all` | - | **DNS only (Gray ☁️)** | SPF Sender Authorization |
+| **TXT (DKIM)** | `mail._domainkey` | `v=DKIM1; k=rsa; p=PUBLIC_KEY_FROM_DASHBOARD` | - | **DNS only (Gray ☁️)** | 2048-bit RSA Cryptographic Signature |
+| **TXT (DMARC)** | `_dmarc` | `v=DMARC1; p=none; sp=none;` | - | **DNS only (Gray ☁️)** | Anti-Spoofing & DMARC |
+
+### 🚀 1-Click Cloudflare Import:
+In the dashboard **Custom Domains** tab ➔ Click **DNS Guide** ➔ Click **Export for Cloudflare (.txt)**.
+Then open **Cloudflare ➔ DNS ➔ Records ➔ Import and Export ➔ Import**, and upload the file. All 4 records will be created automatically in 5 seconds!
 
 ---
 
-## 🛡️ 100% Inbox Deliverability & Spam Prevention Checklist
-
-To ensure emails sent from your server (and all custom tenant domains like `@dorja.io`) land directly in **Gmail / Yahoo / Outlook Inbox** (not Spam):
-
-### 1. Reverse DNS (PTR Record) on VPS Provider *(Crucial)*
-- Go to your VPS Control Panel (Hostinger / Hetzner / DigitalOcean) ➔ **IP Management** / **Reverse DNS**.
-- Set the PTR record for your VPS IP `YOUR_VPS_IP` to: **`mail.yourdomain.com`**.
-- This satisfies Gmail's Mandatory PTR validation check.
-
-### 2. Main Server A Record
-- In your main domain DNS (e.g. `kidukart.com`), ensure `mail` has an **A Record** pointing to `YOUR_VPS_IP` with **DNS only (Gray Cloud ☁️)**.
-
-### 3. Tenant / Custom Domain DNS Settings (e.g. `dorja.io`)
-Each custom domain added to the platform must add these 4 records in their Cloudflare / DNS:
-- **MX**: `@` ➔ `mail.yourdomain.com` (Priority 10)
-- **TXT (SPF)**: `@` ➔ `v=spf1 ip4:YOUR_VPS_IP ~all`
-- **TXT (DMARC)**: `_dmarc` ➔ `v=DMARC1; p=none; sp=none;`
-- **TXT (DKIM)**: `mail._domainkey` ➔ (Generated automatically in the Domain Settings modal)
-
----
-
-## 🔄 Updating to Latest Changes in Future
-Whenever updates are pushed to GitHub, run:
+## 🔄 Updating to Latest Changes
 ```bash
 cd /var/www/html/mailbox
 git pull origin main
@@ -175,4 +164,6 @@ npm run build
 pm2 restart mailbox-app
 ```
 
-
+## 🔑 Default Super Admin Login Credentials
+- **Email**: `foysal@example.com`
+- **Password**: `password123`
