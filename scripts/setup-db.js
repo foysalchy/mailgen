@@ -1,7 +1,32 @@
 const mysql = require('mysql2/promise');
 
-require('dotenv').config({ path: '.env.local' });
-require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
+
+function loadEnvFile(filePath) {
+  if (fs.existsSync(filePath)) {
+    const content = fs.readFileSync(filePath, 'utf8');
+    content.split('\n').forEach((line) => {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#')) {
+        const idx = trimmed.indexOf('=');
+        if (idx !== -1) {
+          const key = trimmed.slice(0, idx).trim();
+          let val = trimmed.slice(idx + 1).trim();
+          if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            val = val.slice(1, -1);
+          }
+          if (process.env[key] === undefined) {
+            process.env[key] = val;
+          }
+        }
+      }
+    });
+  }
+}
+
+loadEnvFile(path.join(process.cwd(), '.env.local'));
+loadEnvFile(path.join(process.cwd(), '.env'));
 
 async function run() {
   const connection = await mysql.createConnection({
