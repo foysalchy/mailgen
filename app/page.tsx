@@ -1743,69 +1743,176 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </form>
             </div>
           ) : authStep === 'select_plan' ? (
-            <div className="w-full max-w-5xl">
-              <div className="text-center mb-8">
-                <span className="text-xs font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full">
-                  Step 1: Choose Package
-                </span>
-                <h2 className="text-3xl font-extrabold text-white mt-3">Select Subscription Package</h2>
-                <p className="text-sm text-slate-400 mt-1">Configured with mailbox quotas and domain limits</p>
+            <div className="w-full max-w-6xl py-4 space-y-16">
+              {/* HERO SECTION */}
+              <div className="text-center space-y-6 pt-4">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span>Next-Gen Enterprise Mail Server & Multi-Tenant SaaS Platform</span>
+                </div>
+
+                <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-tight max-w-4xl mx-auto">
+                  Lightning Fast, Secure & <br />
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400">
+                    Self-Hosted Professional Mailboxes
+                  </span>
+                </h1>
+
+                <p className="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+                  Send, receive, and manage business emails under your own custom domains. Featuring high-deliverability Postfix SMTP, Dovecot IMAP, REST API for web apps, and modern Webmail.
+                </p>
+
+                <div className="flex items-center justify-center gap-4 pt-2 flex-wrap">
+                  <a
+                    href="#pricing"
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-bold rounded-xl shadow-xl shadow-blue-600/30 transition-all flex items-center gap-2"
+                  >
+                    <span>Get Started Today</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                  <button
+                    onClick={() => {
+                      setAuthMode('login');
+                      setAuthError('');
+                    }}
+                    className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-sm font-semibold rounded-xl transition-all"
+                  >
+                    Sign In to Webmail
+                  </button>
+                </div>
               </div>
 
+              {/* LIVE FEATURE HIGHLIGHTS */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {plans.map((plan) => {
-                  const isSelected = selectedPlanForRegistration?.id === plan.id;
-                  return (
-                    <div
-                      key={plan.id}
-                      onClick={() => setSelectedPlanForRegistration(plan)}
-                      className={`bg-slate-900 rounded-2xl p-6 border cursor-pointer transition-all flex flex-col justify-between ${
-                        isSelected
-                          ? 'border-blue-500 ring-2 ring-blue-500/50 shadow-xl shadow-blue-500/20 bg-slate-900/90'
-                          : 'border-slate-800 hover:border-slate-700'
-                      }`}
-                    >
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="text-lg font-bold text-white">{plan.name}</h3>
-                          {isSelected && <Check className="w-5 h-5 text-blue-400" />}
-                        </div>
-                        <div className="mt-2 mb-5">
-                          <span className="text-3xl font-extrabold text-white">${plan.price_monthly}</span>
-                          <span className="text-xs text-slate-400"> / month</span>
-                        </div>
-                        <ul className="space-y-3 text-xs text-slate-300">
-                          <li className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> Max {plan.max_domains} Custom Domain(s)
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> Max {plan.max_mailboxes} User Accounts
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> {plan.storage_quota_mb / 1024} GB Cloud Space
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> {plan.bulk_mail_daily_limit} Bulk Emails/day
-                          </li>
-                        </ul>
-                      </div>
+                <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl hover:border-slate-700 transition-all shadow-lg space-y-3">
+                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
+                    <Globe className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white">Custom Domain Freedom</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Connect unlimited domains via Cloudflare or cPanel without modifying your website IP. Automatic DKIM, SPF & DMARC DNS generation.
+                  </p>
+                </div>
 
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedPlanForRegistration(plan);
-                          setAuthStep('payment_register');
-                        }}
-                        className={`w-full mt-6 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                          isSelected ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+                <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl hover:border-slate-700 transition-all shadow-lg space-y-3">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                    <Terminal className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white">REST API & Next.js / PHP SDK</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Send transactional emails directly from your website or eCommerce apps with a single HTTP POST request. Zero complex SMTP configurations.
+                  </p>
+                </div>
+
+                <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl hover:border-slate-700 transition-all shadow-lg space-y-3">
+                  <div className="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20">
+                    <HardDrive className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white">Flexible Quota & Sub-Users</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Allocate custom GB storage quotas per mailbox. Grant team members granular role permissions with individual email signatures.
+                  </p>
+                </div>
+              </div>
+
+              {/* PRICING SECTION */}
+              <div id="pricing" className="pt-6 space-y-8">
+                <div className="text-center space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
+                    Transparent Pricing Plans
+                  </span>
+                  <h2 className="text-3xl font-extrabold text-white">Choose the Right Plan for Your Business</h2>
+                  <p className="text-sm text-slate-400">Scale your communication infrastructure effortlessly with zero lock-in contracts.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {plans.map((plan) => {
+                    const isSelected = selectedPlanForRegistration?.id === plan.id;
+                    return (
+                      <div
+                        key={plan.id}
+                        onClick={() => setSelectedPlanForRegistration(plan)}
+                        className={`bg-slate-900 rounded-2xl p-7 border cursor-pointer transition-all flex flex-col justify-between relative ${
+                          isSelected
+                            ? 'border-blue-500 ring-2 ring-blue-500/50 shadow-2xl shadow-blue-500/20 bg-slate-900'
+                            : 'border-slate-800 hover:border-slate-700'
                         }`}
                       >
-                        Select & Continue to Payment
-                      </button>
-                    </div>
-                  );
-                })}
+                        {plan.price_monthly > 15 && (
+                          <span className="absolute -top-3 right-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider shadow">
+                            Most Popular
+                          </span>
+                        )}
+
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-xl font-bold text-white">{plan.name}</h3>
+                            {isSelected && <Check className="w-5 h-5 text-blue-400" />}
+                          </div>
+                          <div className="mt-2 mb-6">
+                            <span className="text-4xl font-extrabold text-white">${plan.price_monthly}</span>
+                            <span className="text-xs text-slate-400"> / month</span>
+                          </div>
+                          <ul className="space-y-3.5 text-xs text-slate-300">
+                            <li className="flex items-center gap-2.5">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                              <span>Max <strong>{plan.max_domains}</strong> Custom Domain(s)</span>
+                            </li>
+                            <li className="flex items-center gap-2.5">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                              <span>Max <strong>{plan.max_mailboxes}</strong> User Accounts</span>
+                            </li>
+                            <li className="flex items-center gap-2.5">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                              <span><strong>{plan.storage_quota_mb / 1024} GB</strong> Cloud Storage</span>
+                            </li>
+                            <li className="flex items-center gap-2.5">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                              <span><strong>{plan.bulk_mail_daily_limit}</strong> Bulk Emails/day</span>
+                            </li>
+                            <li className="flex items-center gap-2.5 text-slate-400">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                              <span>REST API & Webhooks Access</span>
+                            </li>
+                          </ul>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPlanForRegistration(plan);
+                            setAuthStep('payment_register');
+                          }}
+                          className={`w-full mt-8 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                            isSelected
+                              ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30'
+                              : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+                          }`}
+                        >
+                          <span>Select Plan & Continue</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* ENTERPRISE TRUST & SECURITY FOOTER BADGE */}
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+                <div className="flex items-center gap-3">
+                  <ShieldCheck className="w-6 h-6 text-emerald-400 shrink-0" />
+                  <div>
+                    <h4 className="text-sm font-bold text-white">Enterprise Privacy & Security</h4>
+                    <p className="text-[11px] text-slate-400">Fully compliant with SPF, DKIM, DMARC, and TLS 1.3 encryption.</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 text-slate-400 text-xs">
+                  <span>🔒 99.9% Uptime Guarantee</span>
+                  <span>•</span>
+                  <span>⚡ 24/7 Server Monitoring</span>
+                </div>
               </div>
             </div>
           ) : registrationSuccessNotice ? (
