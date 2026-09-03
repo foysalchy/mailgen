@@ -168,9 +168,9 @@ export default function MailboxApp() {
   const [mailboxes, setMailboxes] = useState<any[]>([]);
   const [selectedMailbox, setSelectedMailbox] = useState<any>(null);
   const [newMailboxModal, setNewMailboxModal] = useState(false);
-  const [newMailboxData, setNewMailboxData] = useState({ username: '', password: '', fullName: '', signature: '', quotaMb: 2048, domainId: '' });
+  const [newMailboxData, setNewMailboxData] = useState({ username: '', password: '', fullName: '', signature: '', quotaMb: 2048, roleId: '', domainId: '' });
   const [editMailboxModal, setEditMailboxModal] = useState<any>(null);
-  const [editMailboxForm, setEditMailboxForm] = useState({ fullName: '', signature: '', quotaMb: 2048, password: '' });
+  const [editMailboxForm, setEditMailboxForm] = useState({ fullName: '', signature: '', quotaMb: 2048, roleId: '', password: '' });
 
   // Webmail state
   const [currentFolder, setCurrentFolder] = useState<string>('inbox');
@@ -228,19 +228,20 @@ export default function MailboxApp() {
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupCsv, setNewGroupCsv] = useState('');
 
-  // Sub-Users & Granular Role/Permissions state
-  const [subUsers, setSubUsers] = useState<any[]>([]);
-  const [subUserModal, setSubUserModal] = useState(false);
-  const [subUserForm, setSubUserForm] = useState({
+  // Company Roles & Granular Permissions state
+  const [companyRoles, setCompanyRoles] = useState<any[]>([]);
+  const [roleModal, setRoleModal] = useState(false);
+  const [roleForm, setRoleForm] = useState({
+    id: null as number | null,
     name: '',
-    email: '',
-    password: '',
+    description: '',
     permissions: {
+      canSwitchMailbox: false,
       canSendBulk: false,
       canDeleteMail: true,
       canManageFolders: true,
-      canManageTags: true,
-      canManageDomains: false,
+      canManageTemplates: false,
+      canManageSettings: false,
       canManageMailboxes: false,
     },
   });
@@ -310,9 +311,9 @@ export default function MailboxApp() {
     if (currentUser?.id) {
       fetchDomains(currentUser.id, currentUser.company_id);
       fetchMailboxes(currentUser.id, currentUser.company_id);
+      fetchRoles(currentUser.company_id);
       fetchBulkData(currentUser.id);
       fetchOrganization(currentUser.id, selectedMailbox?.id);
-      fetchSubUsers(currentUser.id);
       fetchApiKeys(currentUser.id);
       fetchTemplates(currentUser.id, currentUser.company_id);
       fetchBilling(currentUser.id);
@@ -583,6 +584,88 @@ export default function MailboxApp() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const fetchRoles = async (companyId?: number) => {
+    try {
+      const cid = companyId || currentUser?.company_id || 1;
+      const res = await fetch(`/api/roles?companyId=${cid}`);
+      const data = await res.json();
+      if (data.success) {
+        setCompanyRoles(data.roles || []);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSaveRole = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!roleForm.name.trim()) {
+      toast.warning('Role name is required');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/roles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: roleForm.id ? 'update' : 'create',
+          roleId: roleForm.id,
+          companyId: currentUser?.company_id || 1,
+          name: roleForm.name.trim(),
+          description: roleForm.description,
+          permissions: roleForm.permissions,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRoleModal(false);
+        setRoleForm({
+          id: null,
+          name: '',
+          description: '',
+          permissions: {
+            canSwitchMailbox: false,
+            canSendBulk: false,
+            canDeleteMail: true,
+            canManageFolders: true,
+            canManageTemplates: false,
+            canManageSettings: false,
+            canManageMailboxes: false,
+          },
+        });
+        fetchRoles(currentUser?.company_id);
+        if (currentUser?.id) fetchMailboxes(currentUser.id, currentUser.company_id);
+        toast.success(data.message || 'Role and permissions saved successfully!');
+      } else {
+        toast.error(data.message || 'Failed to save role');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error saving role');
+    }
+  };
+
+  const handleDeleteRole = async (roleId: number) => {
+    if (!confirm('Are you sure you want to delete this role? Users assigned to this role will lose their custom permissions.')) return;
+    try {
+      const res = await fetch('/api/roles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', roleId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchRoles(currentUser?.company_id);
+        if (currentUser?.id) fetchMailboxes(currentUser.id, currentUser.company_id);
+        toast.success(data.message || 'Role deleted');
+      } else {
+        toast.error(data.message || 'Failed to delete role');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error deleting role');
     }
   };
 
@@ -2393,21 +2476,30 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
             </div>
           )}
 
-          {/* Mailbox Switcher */}
-          <select
-            value={selectedMailbox?.id || ''}
-            onChange={(e) => {
-              const found = mailboxes.find((m) => m.id === Number(e.target.value));
-              setSelectedMailbox(found || null);
-            }}
-            className="w-full bg-slate-800 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200"
-          >
-            {mailboxes.map((mb) => (
-              <option key={mb.id} value={mb.id}>
-                {mb.email}
-              </option>
-            ))}
-          </select>
+          {/* Mailbox Switcher (Only visible if company admin, superadmin, or user has canSwitchMailbox permission) */}
+          {(currentUser.role !== 'mailbox_user' || currentUser?.permissions?.canSwitchMailbox) && mailboxes.length > 1 ? (
+            <div className="mt-2">
+              <label className="block text-[10px] text-slate-400 font-semibold mb-1">Switch Active Mailbox</label>
+              <select
+                value={selectedMailbox?.id || ''}
+                onChange={(e) => {
+                  const found = mailboxes.find((m) => m.id === Number(e.target.value));
+                  setSelectedMailbox(found || null);
+                }}
+                className="w-full bg-slate-800 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                {mailboxes.map((mb) => (
+                  <option key={mb.id} value={mb.id}>
+                    {mb.email}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="mt-2 text-[11px] font-mono text-slate-400 truncate bg-slate-950/80 px-2.5 py-1.5 rounded-lg border border-slate-800">
+              ✉ {selectedMailbox?.email || currentUser.email}
+            </div>
+          )}
         </div>
       </aside>
 
@@ -3462,20 +3554,35 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     Accounts created: {mailboxes.length} of {currentUser.max_mailboxes || 5} allowed.
                   </p>
                 </div>
-                {(currentUser?.role !== 'sub_user' || currentUser?.permissions?.canManageMailboxes) ? (
-                  <button
-                    onClick={() => setNewMailboxModal(true)}
-                    disabled={domains.length === 0}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-blue-600/25"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Create Mailbox</span>
-                  </button>
-                ) : (
-                  <span className="text-xs text-slate-500 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">
-                    Mailbox provisioning restricted
-                  </span>
-                )}
+                <div className="flex items-center gap-2.5">
+                  {currentUser.role !== 'mailbox_user' && (
+                    <button
+                      onClick={() => {
+                        fetchRoles(currentUser.company_id);
+                        setRoleModal(true);
+                      }}
+                      className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 border border-slate-700"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+                      <span>Manage Roles ({companyRoles.length})</span>
+                    </button>
+                  )}
+
+                  {(currentUser?.role !== 'sub_user' || currentUser?.permissions?.canManageMailboxes) ? (
+                    <button
+                      onClick={() => setNewMailboxModal(true)}
+                      disabled={domains.length === 0}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-lg shadow-blue-600/25"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Create Mailbox</span>
+                    </button>
+                  ) : (
+                    <span className="text-xs text-slate-500 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">
+                      Mailbox provisioning restricted
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
@@ -3484,6 +3591,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     <tr>
                       <th className="p-4">Email Address</th>
                       <th className="p-4">Full Name</th>
+                      <th className="p-4">Assigned Role</th>
                       <th className="p-4">Storage Quota</th>
                       <th className="p-4">Status</th>
                       <th className="p-4">Actions</th>
@@ -3497,6 +3605,13 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                           <span>{mb.email}</span>
                         </td>
                         <td className="p-4">{mb.full_name || '-'}</td>
+                        <td className="p-4">
+                          <span className={`text-[11px] px-2 py-0.5 rounded font-medium border ${
+                            mb.role_name ? 'bg-purple-500/10 text-purple-300 border-purple-500/30' : 'bg-slate-800 text-slate-400 border-slate-700'
+                          }`}>
+                            {mb.role_name || 'Standard User'}
+                          </span>
+                        </td>
                         <td className="p-4">
                           <span className="font-semibold text-white">{(mb.quota_mb / 1024).toFixed(1)} GB</span>
                           <span className="text-[11px] text-slate-400 block font-mono">({mb.quota_mb} MB)</span>
@@ -4663,23 +4778,24 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* 1. COMPANY INFORMATION CARD */}
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
-                          <Building2 className="w-4 h-4" />
+                {/* 1. COMPANY INFORMATION CARD (Only editable by Company Admin & Super Admin) */}
+                {currentUser.role !== 'mailbox_user' ? (
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
+                            <Building2 className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-bold text-white">Company Information & Branding</h3>
+                            <p className="text-[11px] text-slate-400">Organization profile & global footer (Admin only)</p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="text-sm font-bold text-white">Company Information</h3>
-                          <p className="text-[11px] text-slate-400">Organization profile & public tenant details</p>
-                        </div>
+                        <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                          Admin Settings
+                        </span>
                       </div>
-                      <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-                        Tenant Settings
-                      </span>
-                    </div>
 
                     <form onSubmit={handleUpdateCompanyInfo} className="space-y-4">
                       <div>
@@ -4773,9 +4889,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     </form>
                   </div>
                 </div>
+                ) : null}
 
                 {/* 2. USER PROFILE & PASSWORD CHANGE CARD */}
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                <div className={`bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between ${currentUser.role === 'mailbox_user' ? 'max-w-xl mx-auto col-span-2 w-full' : ''}`}>
                   <div>
                     <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
                       <div className="flex items-center gap-2.5">
@@ -4805,13 +4922,31 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-slate-300 mb-1.5">Login Email Address *</label>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1.5">Login Email Address</label>
                         <input
                           type="email"
+                          disabled={currentUser.role === 'mailbox_user'}
                           required
                           value={profileSettingsForm.email}
                           onChange={(e) => setProfileSettingsForm({ ...profileSettingsForm, email: e.target.value })}
-                          className="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 text-xs text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 text-xs text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 font-mono"
+                        />
+                      </div>
+
+                      {/* INDIVIDUAL SIGNATURE (USER SPECIFIC) */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="block text-xs font-semibold text-amber-300">
+                            ✍️ My Personal Email Signature
+                          </label>
+                          <span className="text-[10px] text-slate-400 font-mono">Appended when sending</span>
+                        </div>
+                        <textarea
+                          rows={3}
+                          placeholder="Best regards,&#10;Your Name | Role&#10;Direct: +880 1700-000000"
+                          value={profileSettingsForm.signature || ''}
+                          onChange={(e) => setProfileSettingsForm({ ...profileSettingsForm, signature: e.target.value })}
+                          className="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 text-xs font-mono text-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 leading-relaxed"
                         />
                       </div>
 
@@ -5602,6 +5737,26 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </div>
 
               {/* STORAGE QUOTA ALLOCATION (DYNAMICALLY CAPPED TO COMPANY PLAN LIMIT) */}
+              {/* ROLE SELECTION */}
+              <div>
+                <label className="block text-xs font-semibold text-purple-300 mb-1.5">
+                  🛡️ Assign User Role & Permissions
+                </label>
+                <select
+                  value={newMailboxData.roleId || ''}
+                  onChange={(e) => setNewMailboxData({ ...newMailboxData, roleId: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                >
+                  <option value="">Standard User (Default permissions)</option>
+                  {companyRoles.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name} - {r.description || 'Custom role'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* STORAGE QUOTA ALLOCATION (DYNAMICALLY CAPPED TO COMPANY PLAN LIMIT) */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-semibold text-amber-300">
@@ -5661,7 +5816,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
         </div>
       )}
 
-      {/* ===================== MODAL: EDIT MAILBOX (QUOTA & SIGNATURE) ===================== */}
+      {/* ===================== MODAL: EDIT MAILBOX (QUOTA & SIGNATURE & ROLE) ===================== */}
       {editMailboxModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-6">
@@ -5688,6 +5843,25 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   onChange={(e) => setEditMailboxForm({ ...editMailboxForm, fullName: e.target.value })}
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
                 />
+              </div>
+
+              {/* ROLE SELECTION */}
+              <div>
+                <label className="block text-xs font-semibold text-purple-300 mb-1">
+                  🛡️ User Role & Permissions
+                </label>
+                <select
+                  value={editMailboxForm.roleId || ''}
+                  onChange={(e) => setEditMailboxForm({ ...editMailboxForm, roleId: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                >
+                  <option value="">Standard User (Default permissions)</option>
+                  {companyRoles.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name} - {r.description || 'Custom role'}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* STORAGE QUOTA ALLOCATION (DYNAMICALLY CAPPED TO COMPANY PLAN LIMIT) */}
@@ -6873,6 +7047,252 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 </button>
               </div>
             </form>
+      {/* ===================== MODAL: ROLE & PERMISSION MANAGER ===================== */}
+      {roleModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl shadow-2xl p-6 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-purple-400" />
+                <div>
+                  <h3 className="text-base font-bold text-white">Company Roles & Permissions</h3>
+                  <p className="text-xs text-slate-400">Define custom roles to assign to your mailboxes</p>
+                </div>
+              </div>
+              <button onClick={() => setRoleModal(false)} className="text-slate-400 hover:text-white text-sm">✕</button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto pr-1">
+              {/* Left Column: Create/Edit Role Form */}
+              <form onSubmit={handleSaveRole} className="space-y-4 bg-slate-950/60 p-4 rounded-xl border border-slate-800">
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <span>{roleForm.id ? '✏️ Edit Role' : '➕ Create New Role'}</span>
+                </h4>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">Role Title *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Sales Agent or Support Staff"
+                    value={roleForm.name}
+                    onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-700 px-3 py-1.5 text-xs text-white rounded-lg focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">Description</label>
+                  <input
+                    type="text"
+                    placeholder="Access to personal webmail only"
+                    value={roleForm.description}
+                    onChange={(e) => setRoleForm({ ...roleForm, description: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-700 px-3 py-1.5 text-xs text-white rounded-lg focus:outline-none"
+                  />
+                </div>
+
+                {/* Granular Permission Toggles */}
+                <div className="space-y-2.5 pt-2 border-t border-slate-800">
+                  <span className="block text-[11px] font-bold text-slate-300">Allowed Capabilities & Permissions:</span>
+
+                  <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={roleForm.permissions.canSwitchMailbox}
+                      onChange={(e) => setRoleForm({
+                        ...roleForm,
+                        permissions: { ...roleForm.permissions, canSwitchMailbox: e.target.checked },
+                      })}
+                      className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0 w-4 h-4"
+                    />
+                    <div>
+                      <span className="font-semibold block text-amber-300">Switch & View Other Mailboxes</span>
+                      <span className="text-[10px] text-slate-400 block">Allow switching to other company emails from sidebar footer</span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={roleForm.permissions.canSendBulk}
+                      onChange={(e) => setRoleForm({
+                        ...roleForm,
+                        permissions: { ...roleForm.permissions, canSendBulk: e.target.checked },
+                      })}
+                      className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0 w-4 h-4"
+                    />
+                    <div>
+                      <span className="font-semibold block text-slate-200">Bulk Campaigns</span>
+                      <span className="text-[10px] text-slate-400 block">Send bulk marketing newsletters</span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={roleForm.permissions.canManageTemplates}
+                      onChange={(e) => setRoleForm({
+                        ...roleForm,
+                        permissions: { ...roleForm.permissions, canManageTemplates: e.target.checked },
+                      })}
+                      className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0 w-4 h-4"
+                    />
+                    <div>
+                      <span className="font-semibold block text-slate-200">Email Templates</span>
+                      <span className="text-[10px] text-slate-400 block">Create and manage email templates</span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={roleForm.permissions.canDeleteMail}
+                      onChange={(e) => setRoleForm({
+                        ...roleForm,
+                        permissions: { ...roleForm.permissions, canDeleteMail: e.target.checked },
+                      })}
+                      className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0 w-4 h-4"
+                    />
+                    <div>
+                      <span className="font-semibold block text-slate-200">Delete Messages</span>
+                      <span className="text-[10px] text-slate-400 block">Move messages to trash or delete</span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={roleForm.permissions.canManageFolders}
+                      onChange={(e) => setRoleForm({
+                        ...roleForm,
+                        permissions: { ...roleForm.permissions, canManageFolders: e.target.checked },
+                      })}
+                      className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0 w-4 h-4"
+                    />
+                    <div>
+                      <span className="font-semibold block text-slate-200">Custom Folders & Labels</span>
+                      <span className="text-[10px] text-slate-400 block">Create custom webmail folders</span>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+                  {roleForm.id && (
+                    <button
+                      type="button"
+                      onClick={() => setRoleForm({
+                        id: null,
+                        name: '',
+                        description: '',
+                        permissions: {
+                          canSwitchMailbox: false,
+                          canSendBulk: false,
+                          canDeleteMail: true,
+                          canManageFolders: true,
+                          canManageTemplates: false,
+                          canManageSettings: false,
+                          canManageMailboxes: false,
+                        },
+                      })}
+                      className="text-xs text-slate-400 hover:text-white"
+                    >
+                      Reset / New
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    className="ml-auto px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg shadow-lg"
+                  >
+                    {roleForm.id ? 'Update Role' : 'Save Role'}
+                  </button>
+                </div>
+              </form>
+
+              {/* Right Column: Existing Roles List */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Configured Roles ({companyRoles.length})
+                </h4>
+
+                {companyRoles.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-slate-500 bg-slate-950/40 border border-slate-800 rounded-xl">
+                    No custom roles created yet. Default permissions will apply to mailboxes.
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {companyRoles.map((r) => (
+                      <div
+                        key={r.id}
+                        className="bg-slate-950/70 border border-slate-800 p-3.5 rounded-xl flex items-start justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white">{r.name}</span>
+                            <span className="text-[10px] bg-purple-500/10 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/20">
+                              {r.user_count || 0} user(s)
+                            </span>
+                          </div>
+                          {r.description && (
+                            <p className="text-[11px] text-slate-400 mt-0.5">{r.description}</p>
+                          )}
+
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {r.permissions?.canSwitchMailbox && (
+                              <span className="text-[9px] bg-amber-500/10 text-amber-300 border border-amber-500/20 px-1.5 py-0.5 rounded">
+                                🔄 Switch Mailbox
+                              </span>
+                            )}
+                            {r.permissions?.canSendBulk && (
+                              <span className="text-[9px] bg-blue-500/10 text-blue-300 border border-blue-500/20 px-1.5 py-0.5 rounded">
+                                ⚡ Bulk
+                              </span>
+                            )}
+                            {r.permissions?.canManageTemplates && (
+                              <span className="text-[9px] bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-1.5 py-0.5 rounded">
+                                📑 Templates
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setRoleForm({
+                              id: r.id,
+                              name: r.name,
+                              description: r.description || '',
+                              permissions: r.permissions || {
+                                canSwitchMailbox: false,
+                                canSendBulk: false,
+                                canDeleteMail: true,
+                                canManageFolders: true,
+                                canManageTemplates: false,
+                                canManageSettings: false,
+                                canManageMailboxes: false,
+                              },
+                            })}
+                            className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800"
+                            title="Edit Role"
+                          >
+                            <Settings2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteRole(r.id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-400 rounded hover:bg-slate-800"
+                            title="Delete Role"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

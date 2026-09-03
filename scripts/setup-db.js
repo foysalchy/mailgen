@@ -125,8 +125,21 @@ async function run() {
       ) ENGINE=InnoDB;
     `);
 
+    // 4.1 Custom Company Roles & Permissions Table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS company_roles (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        company_id INT NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        description VARCHAR(255) NULL,
+        permissions_json LONGTEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `);
+
     try {
-      await connection.query('ALTER TABLE virtual_users ADD COLUMN signature LONGTEXT NULL AFTER full_name');
+      await connection.query('ALTER TABLE virtual_users ADD COLUMN role_id INT NULL AFTER full_name');
     } catch (e) {}
     try {
       await connection.query("ALTER TABLE virtual_users ADD COLUMN role VARCHAR(50) DEFAULT 'user'");

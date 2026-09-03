@@ -11,11 +11,14 @@ export async function GET(request: Request) {
     const companyId = searchParams.get('companyId');
 
     let query = `
-      SELECT u.id, u.email, u.full_name, u.signature, u.quota_mb, u.is_active, u.created_at, d.name AS domain_name,
+      SELECT u.id, u.email, u.full_name, u.signature, u.quota_mb, u.role_id, u.permissions_json, u.is_active, u.created_at, 
+        d.name AS domain_name,
+        r.name as role_name,
         (SELECT COUNT(*) FROM webmail_messages WHERE mailbox_id = u.id AND folder = 'inbox' AND is_read = 0) AS unread_count,
         (SELECT COUNT(*) FROM webmail_messages WHERE mailbox_id = u.id) AS total_messages
       FROM virtual_users u
       JOIN virtual_domains d ON u.domain_id = d.id
+      LEFT JOIN company_roles r ON u.role_id = r.id
     `;
     const params: any[] = [];
 
@@ -45,7 +48,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { domainId, username, password, fullName, signature, quotaMb = 2048, userId = 1, companyId } = body;
+    const { domainId, username, password, fullName, signature, quotaMb = 2048, roleId, userId = 1, companyId } = body;
 
     if (!domainId || !username || !password) {
       return NextResponse.json({ success: false, message: 'Missing required mailbox fields' }, { status: 400 });
@@ -54,6 +57,8 @@ export async function POST(request: Request) {
     // Ensure signature column exists
     try {
       await pool.query('ALTER TABLE virtual_users ADD COLUMN signature LONGTEXT NULL');
+      await pool.query('ALTER TABLE virtual_users ADD COLUMN role_id INT NULL');
+      await pool.query('ALTER TABLE virtual_users ADD COLUMN permissions_json LONGTEXT NULL');
     } catch (e) {}
 
     // Resolve company_id if not explicitly provided
@@ -79,20 +84,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: `The mailbox '${email}' already exists.` }, { status: 409 });
     }
 
+    // Fetch role permissions if roleId provided
+    let permissionsJson = null;
+    if (roleId) {
+      const [roleRows]: any = await pool.query('SELECT permissions_json FROM company_roles WHERE id = ?', [roleId]);
+      if (roleRows.length > 0) {
+        permissionsJson = roleRows[0].permissions_json;
+      }
+    }
+
     // Hash password with Dovecot compatible SHA-512 crypt or bcrypt
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     const dovecotPassword = `{BLF-CRYPT}${hashedPassword}`;
 
     const [result]: any = await pool.query(
-      `INSERT INTO virtual_users (company_id, domain_id, user_id, email, password, full_name, signature, quota_mb)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [resolvedCompanyId || 1, domainId, userId, email, dovecotPassword, fullName || cleanUsername, signature || '', quotaMb]
+      `INSERT INTO virtual_users (company_id, domain_id, user_id, email, password, full_name, signature, quota_mb, role_id, permissions_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [resolvedCompanyId || 1, domainId, userId, email, dovecotPassword, fullName || cleanUsername, signature || '', quotaMb, roleId || null, permissionsJson]
     );
 
     const mailboxId = result.insertId;
 
-    // Add a welcome email in webmail_messages (Compatible with both Dark & Light Themes)
+    // Add a welcome email in webmail_messages
     await pool.query(
       `INSERT INTO webmail_messages (mailbox_id, folder, sender, sender_name, recipients, subject, body_html, body_text, is_read)
        VALUES (?, 'inbox', 'support@system.local', 'Mail Server Administrator', ?, 'Welcome to your new Professional Mailbox!', ?, ?, 0)`,
@@ -100,26 +114,12 @@ export async function POST(request: Request) {
         mailboxId,
         email,
         `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; line-height: 1.6; background-color: #0f172a; color: #f8fafc; border: 1px solid #1e293b; border-radius: 16px; padding: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
-            <div style="background: linear-gradient(135deg, #3b82f6, #6366f1); width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px;">✉</div>
-            <h2 style="color: #60a5fa; margin: 0; font-size: 20px; font-weight: 700;">Welcome to your new Mailbox!</h2>
-          </div>
-          <p style="color: #cbd5e1; font-size: 14px; margin-top: 0;">Your email account <strong style="color: #ffffff; background: #1e293b; padding: 2px 8px; border-radius: 6px;">${email}</strong> has been provisioned and is 100% active for sending & receiving.</p>
-          
-          <div style="background-color: #1e293b; border: 1px solid #334155; padding: 18px; border-radius: 12px; margin: 20px 0;">
-            <h3 style="color: #93c5fd; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px 0; font-weight: 700;">⚙️ External Mail Client Settings (Outlook, Apple Mail, Thunderbird):</h3>
-            <div style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 13px; color: #e2e8f0; line-height: 1.8;">
-              <div>• <strong>IMAP Server:</strong> <span style="color: #38bdf8;">mail.kidukart.com</span> (Port: 993, SSL/TLS)</div>
-              <div>• <strong>SMTP Server:</strong> <span style="color: #38bdf8;">mail.kidukart.com</span> (Port: 587 or 465, STARTTLS/SSL)</div>
-              <div>• <strong>Username:</strong> <span style="color: #a7f3d0;">${email}</span></div>
-              <div>• <strong>Password:</strong> (Your mailbox password)</div>
-            </div>
-          </div>
-          <p style="margin: 0; font-size: 12px; color: #94a3b8;">Protected with End-to-End TLS Encryption & Spam Protection • MailBox Pro Platform</p>
+        <div style="font-family: sans-serif; max-width: 600px; color: #f8fafc; background: #0f172a; padding: 24px; border-radius: 12px; border: 1px solid #1e293b;">
+          <h2 style="color: #60a5fa; margin-top: 0;">Welcome to ${email}!</h2>
+          <p>Your mailbox has been successfully provisioned on the platform.</p>
         </div>
         `,
-        `Welcome to your new mailbox: ${email}\n\nYour mailbox has been successfully provisioned.\n\nSettings:\nIMAP: mail.kidukart.com (Port: 993)\nSMTP: mail.kidukart.com (Port: 587/465)\nUsername: ${email}`,
+        `Welcome to your new mailbox: ${email}`,
       ]
     );
 
@@ -131,6 +131,7 @@ export async function POST(request: Request) {
         full_name: fullName,
         signature: signature || '',
         quota_mb: quotaMb,
+        role_id: roleId,
       },
     });
   } catch (error: any) {
@@ -138,20 +139,15 @@ export async function POST(request: Request) {
   }
 }
 
-// PUT / PATCH: Update existing mailbox settings (Full Name, Individual Signature, Quota MB, or Password)
+// PUT / PATCH: Update existing mailbox settings
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { mailboxId, fullName, signature, quotaMb, password } = body;
+    const { mailboxId, fullName, signature, quotaMb, roleId, password } = body;
 
     if (!mailboxId) {
       return NextResponse.json({ success: false, message: 'mailboxId is required' }, { status: 400 });
     }
-
-    // Ensure signature column exists
-    try {
-      await pool.query('ALTER TABLE virtual_users ADD COLUMN signature LONGTEXT NULL');
-    } catch (e) {}
 
     const updates: string[] = [];
     const params: any[] = [];
@@ -167,6 +163,18 @@ export async function PUT(request: Request) {
     if (quotaMb !== undefined) {
       updates.push('quota_mb = ?');
       params.push(Number(quotaMb));
+    }
+    if (roleId !== undefined) {
+      updates.push('role_id = ?');
+      params.push(roleId || null);
+
+      if (roleId) {
+        const [rRows]: any = await pool.query('SELECT permissions_json FROM company_roles WHERE id = ?', [roleId]);
+        if (rRows.length > 0) {
+          updates.push('permissions_json = ?');
+          params.push(rRows[0].permissions_json);
+        }
+      }
     }
     if (password && password.trim()) {
       const salt = await bcrypt.genSalt(10);

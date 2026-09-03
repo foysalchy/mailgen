@@ -35,12 +35,14 @@ export async function POST(request: Request) {
       const [vRows]: any = await pool.query(
         `SELECT v.id, v.company_id, v.full_name as name, v.email, v.password as password_hash,
                 'mailbox_user' as role, IF(v.is_active, 'active', 'suspended') as user_status,
-                v.signature, v.quota_mb,
+                v.signature, v.quota_mb, v.role_id, v.permissions_json,
+                r.name as role_name,
                 c.name as company_name, c.status as company_status,
                 p.name as plan_name, p.max_domains, p.max_mailboxes, p.storage_quota_mb
          FROM virtual_users v
          LEFT JOIN companies c ON v.company_id = c.id
          LEFT JOIN plans p ON c.plan_id = p.id
+         LEFT JOIN company_roles r ON v.role_id = r.id
          WHERE v.email = ?`,
         [cleanEmail]
       );
