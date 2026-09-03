@@ -208,6 +208,7 @@ export default function MailboxApp() {
   const [inlineReplyShowBcc, setInlineReplyShowBcc] = useState(false);
   const [inlineReplyView, setInlineReplyView] = useState<'visual' | 'html' | 'preview'>('visual');
   const [inlineReplySending, setInlineReplySending] = useState(false);
+  const [expandedQuotes, setExpandedQuotes] = useState<number[]>([]);
   const [starredTotal, setStarredTotal] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -1515,6 +1516,40 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
     // Clean remaining UTF-8 narrow spaces often sent by Gmail (=E2=80=AF)
     text = text.replace(/\u202F/g, ' ').replace(/\u00A0/g, ' ');
     return text;
+  };
+
+  // Helper to separate newly typed reply from historical quoted thread text (Gmail "Show trimmed content" pattern)
+  const splitEmailMainAndQuote = (htmlOrText: string) => {
+    if (!htmlOrText) return { main: '', quote: '' };
+    const cleaned = cleanEmailContent(htmlOrText);
+
+    // Common quote boundary markers
+    const blockQuoteIdx = cleaned.search(/(<div\s+class=["']gmail_quote["']|<blockquote|---------- Forwarded message ---------|On\s+[A-Za-z]+,\s+[A-Za-z]+\s+\d+,\s+\d{4}.*?wrote:)/i);
+    if (blockQuoteIdx !== -1 && blockQuoteIdx > 0) {
+      return {
+        main: cleaned.substring(0, blockQuoteIdx).trim(),
+        quote: cleaned.substring(blockQuoteIdx).trim(),
+      };
+    }
+
+    // Check plain text line markers
+    const lines = cleaned.split(/\r?\n/);
+    let splitLine = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (/^On\s+.*wrote:$/i.test(lines[i].trim()) || /^>/.test(lines[i].trim()) || /^-{5,}\s*Forwarded message/i.test(lines[i].trim())) {
+        splitLine = i;
+        break;
+      }
+    }
+
+    if (splitLine > 0) {
+      return {
+        main: lines.slice(0, splitLine).join('\n').trim(),
+        quote: lines.slice(splitLine).join('\n').trim(),
+      };
+    }
+
+    return { main: cleaned, quote: '' };
   };
 
   // Reply & Forward Handlers (Gmail / cPanel style)
@@ -3825,20 +3860,19 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     </div>
                   </div>
 
-                  {/* Conversation Messages Thread (Gmail Card List) */}
-                  <div className="space-y-4">
+                  {/* Conversation Messages Thread (Gmail Style Continuous Single-View Flow) */}
+                  <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-sm divide-y divide-slate-800/80">
                     {(threadMessages.length > 0 ? threadMessages : [selectedMessage]).map((msg, idx) => {
                       const isCollapsed = collapsedThreadIds.includes(msg.id);
-                      const isLast = idx === (threadMessages.length > 0 ? threadMessages.length - 1 : 0);
+                      const isQuoteExpanded = expandedQuotes.includes(msg.id);
                       const senderInitial = (msg.sender_name || msg.sender || 'U').charAt(0).toUpperCase();
+                      const { main, quote } = splitEmailMainAndQuote(msg.body_html || `<p>${msg.body_text || ''}</p>`);
 
                       return (
                         <div
                           key={msg.id || idx}
-                          className={`rounded-xl border transition-all ${
-                            isCollapsed
-                              ? 'bg-slate-900/40 border-slate-800/60 hover:bg-slate-900 hover:border-slate-700 cursor-pointer p-3'
-                              : 'bg-slate-900 border-slate-800 shadow-sm p-5'
+                          className={`transition-all ${idx !== 0 ? 'pt-6 mt-6' : ''} ${
+                            isCollapsed ? 'cursor-pointer hover:bg-slate-800/30 p-2.5 rounded-xl' : ''
                           }`}
                           onClick={() => {
                             if (isCollapsed) {
@@ -3928,14 +3962,58 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                               {cleanEmailContent(msg.snippet || msg.body_text || 'Click to view full message...')}
                             </p>
                           ) : (
-                            /* Expanded Message Body */
-                            <div className="mt-4 pt-4 border-t border-slate-800/60 pl-11">
+                            /* Expanded Message Body (Main Message + Trimmed Content Button) */
+                            <div className="mt-4 pl-11 space-y-3">
+                              {/* Newly typed response */}
                               <div
                                 className="prose prose-invert max-w-none text-slate-200 text-sm leading-relaxed overflow-x-auto"
                                 dangerouslySetInnerHTML={{
-                                  __html: cleanEmailContent(msg.body_html || `<p>${msg.body_text || ''}</p>`),
+                                  __html: main || '<p></p>',
                                 }}
                               />
+
+                              {/* Gmail-Style Trimmed Quoted Text Toggle (...) */}
+                              {quote && (
+                                <div className="pt-2">
+                                  {!isQuoteExpanded ? (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setExpandedQuotes((prev) => [...prev, msg.id]);
+                                      }}
+                                      title="Show trimmed content"
+                                      className="px-2.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-md text-xs font-bold tracking-widest transition-all border border-slate-700/60 shadow-sm"
+                                    >
+                                      •••
+                                    </button>
+                                  ) : (
+                                    <div className="mt-2 pl-3 border-l-2 border-slate-700/80 animate-fadeIn space-y-2">
+                                      <div className="flex items-center justify-between pb-1">
+                                        <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">
+                                          Quoted conversation history
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setExpandedQuotes((prev) => prev.filter((id) => id !== msg.id));
+                                          }}
+                                          className="text-[10px] text-slate-500 hover:text-slate-300 hover:underline"
+                                        >
+                                          Hide quoted text
+                                        </button>
+                                      </div>
+                                      <div
+                                        className="prose prose-invert max-w-none text-slate-400 text-xs leading-relaxed overflow-x-auto opacity-90"
+                                        dangerouslySetInnerHTML={{
+                                          __html: quote,
+                                        }}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
