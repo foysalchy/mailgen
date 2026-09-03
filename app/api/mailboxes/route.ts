@@ -89,28 +89,34 @@ export async function POST(request: Request) {
 
     const mailboxId = result.insertId;
 
-    // Add a welcome email in webmail_messages
+    // Add a welcome email in webmail_messages (Compatible with both Dark & Light Themes)
     await pool.query(
-      `INSERT INTO webmail_messages (mailbox_id, folder, sender, sender_name, recipients, subject, body_html, is_read)
-       VALUES (?, 'inbox', 'support@system.local', 'Mail Server Administrator', ?, 'Welcome to your new Professional Mailbox!', ?, 0)`,
+      `INSERT INTO webmail_messages (mailbox_id, folder, sender, sender_name, recipients, subject, body_html, body_text, is_read)
+       VALUES (?, 'inbox', 'support@system.local', 'Mail Server Administrator', ?, 'Welcome to your new Professional Mailbox!', ?, ?, 0)`,
       [
         mailboxId,
         email,
         `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; line-height: 1.6; color: #1e293b;">
-          <h2 style="color: #2563eb; margin-bottom: 12px;">Welcome to your new mailbox: ${email}</h2>
-          <p>Your mailbox has been successfully provisioned and is ready for sending and receiving professional emails.</p>
-          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-          <h3 style="color: #0f172a; font-size: 16px;">External Mail Client Settings (Outlook, Apple Mail, Thunderbird, Mobile):</h3>
-          <ul style="background: #f8fafc; padding: 15px 30px; border-radius: 8px; font-family: monospace; font-size: 13px;">
-            <li><strong>IMAP Server:</strong> mail.${domain.name} (Port: 993, SSL/TLS)</li>
-            <li><strong>SMTP Server:</strong> mail.${domain.name} (Port: 465 or 587, STARTTLS/SSL)</li>
-            <li><strong>Username:</strong> ${email}</li>
-            <li><strong>Password:</strong> (Your mailbox password)</li>
-          </ul>
-          <p style="margin-top: 20px; font-size: 13px; color: #64748b;">Enjoy uninterrupted business communications!</p>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; line-height: 1.6; background-color: #0f172a; color: #f8fafc; border: 1px solid #1e293b; border-radius: 16px; padding: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+            <div style="background: linear-gradient(135deg, #3b82f6, #6366f1); width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px;">✉</div>
+            <h2 style="color: #60a5fa; margin: 0; font-size: 20px; font-weight: 700;">Welcome to your new Mailbox!</h2>
+          </div>
+          <p style="color: #cbd5e1; font-size: 14px; margin-top: 0;">Your email account <strong style="color: #ffffff; background: #1e293b; padding: 2px 8px; border-radius: 6px;">${email}</strong> has been provisioned and is 100% active for sending & receiving.</p>
+          
+          <div style="background-color: #1e293b; border: 1px solid #334155; padding: 18px; border-radius: 12px; margin: 20px 0;">
+            <h3 style="color: #93c5fd; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px 0; font-weight: 700;">⚙️ External Mail Client Settings (Outlook, Apple Mail, Thunderbird):</h3>
+            <div style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 13px; color: #e2e8f0; line-height: 1.8;">
+              <div>• <strong>IMAP Server:</strong> <span style="color: #38bdf8;">mail.kidukart.com</span> (Port: 993, SSL/TLS)</div>
+              <div>• <strong>SMTP Server:</strong> <span style="color: #38bdf8;">mail.kidukart.com</span> (Port: 587 or 465, STARTTLS/SSL)</div>
+              <div>• <strong>Username:</strong> <span style="color: #a7f3d0;">${email}</span></div>
+              <div>• <strong>Password:</strong> (Your mailbox password)</div>
+            </div>
+          </div>
+          <p style="margin: 0; font-size: 12px; color: #94a3b8;">Protected with End-to-End TLS Encryption & Spam Protection • MailBox Pro Platform</p>
         </div>
         `,
+        `Welcome to your new mailbox: ${email}\n\nYour mailbox has been successfully provisioned.\n\nSettings:\nIMAP: mail.kidukart.com (Port: 993)\nSMTP: mail.kidukart.com (Port: 587/465)\nUsername: ${email}`,
       ]
     );
 
