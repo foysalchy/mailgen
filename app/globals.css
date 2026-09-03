@@ -1,26 +1,241 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #020617;
+  --foreground: #f8fafc;
+  color-scheme: dark;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Explicit Dark Mode Text Guarantees (Prevents dim or washed-out text) */
+html.dark .text-white {
+  color: #ffffff !important;
+}
+
+html.dark .text-slate-100 {
+  color: #f1f5f9 !important;
+}
+
+html.dark .text-slate-200 {
+  color: #e2e8f0 !important;
+}
+
+html.dark .text-slate-300 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+html.dark .bg-slate-950 {
+  background-color: #020617 !important;
+  color: #f8fafc !important;
+}
+
+html.dark .bg-slate-900 {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+html.dark .bg-slate-800 {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+/* Light Mode Overrides for clean White Theme */
+html:not(.dark) .bg-slate-950 {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+html:not(.dark) .bg-slate-900 {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+}
+
+html:not(.dark) .bg-slate-900\/70,
+html:not(.dark) .bg-slate-900\/60,
+html:not(.dark) .bg-slate-900\/50,
+html:not(.dark) .bg-slate-900\/40,
+html:not(.dark) .bg-slate-900\/30 {
+  background-color: #ffffff !important;
+}
+
+html:not(.dark) .bg-slate-800,
+html:not(.dark) .bg-slate-800\/80,
+html:not(.dark) .bg-slate-800\/60,
+html:not(.dark) .bg-slate-800\/50,
+html:not(.dark) .bg-slate-800\/40 {
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+}
+
+html:not(.dark) .border-slate-800,
+html:not(.dark) .border-slate-800\/80,
+html:not(.dark) .border-slate-800\/60 {
+  border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) .border-slate-700,
+html:not(.dark) .border-slate-700\/80,
+html:not(.dark) .border-slate-700\/60 {
+  border-color: #cbd5e1 !important;
+}
+
+html:not(.dark) .text-white {
+  color: #0f172a !important;
+}
+
+/* Maintain crisp white text on colored buttons and badges */
+html:not(.dark) button.text-white,
+html:not(.dark) .bg-blue-600,
+html:not(.dark) .bg-blue-600 *,
+html:not(.dark) .bg-indigo-600,
+html:not(.dark) .bg-indigo-600 *,
+html:not(.dark) .bg-purple-600,
+html:not(.dark) .bg-purple-600 *,
+html:not(.dark) .bg-emerald-600,
+html:not(.dark) .bg-emerald-600 *,
+html:not(.dark) [class*="from-blue-600"],
+html:not(.dark) [class*="from-blue-600"] *,
+html:not(.dark) [class*="to-indigo-600"],
+html:not(.dark) [class*="to-indigo-600"] *,
+html:not(.dark) [class*="from-purple-600"],
+html:not(.dark) [class*="from-purple-600"] * {
+  color: #ffffff !important;
+}
+
+/* Fix 1: Amber Alert Banners in Light Mode (fixes yellow-on-yellow unreadable text) */
+html:not(.dark) .bg-amber-500\/10,
+html:not(.dark) .bg-amber-500\/20 {
+  background-color: #fffbeb !important; /* amber-50 */
+  border-color: #fde68a !important;     /* amber-200 */
+}
+
+html:not(.dark) .text-amber-300,
+html:not(.dark) .text-amber-400 {
+  color: #b45309 !important; /* amber-700 / deep amber for crisp readability on light bg */
+}
+
+html:not(.dark) .text-amber-500 {
+  color: #92400e !important; /* amber-800 */
+}
+
+/* Fix 2: Quota Breakdown & Password Change Cards in Light Mode (fixes gray-on-gray background & text) */
+html:not(.dark) .bg-slate-950\/60,
+html:not(.dark) .bg-slate-950\/70,
+html:not(.dark) .bg-slate-950\/80 {
+  background-color: #f8fafc !important; /* clean light slate-50 background */
+  border-color: #e2e8f0 !important;     /* slate-200 border */
+}
+
+/* Fix 3: Monthly Mail Quotas & Overage System Card in Light Mode */
+html:not(.dark) [class*="from-slate-900"][class*="to-blue-950"] {
+  background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%) !important;
+  border-color: #bfdbfe !important;
+  box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.08), 0 8px 10px -6px rgba(59, 130, 246, 0.05) !important;
+}
+
+html:not(.dark) .bg-slate-800 {
+  background-color: #e2e8f0 !important;
+}
+
+html:not(.dark) .border-slate-800\/80 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Text readability in Light Mode cards */
+html:not(.dark) .text-slate-100,
+html:not(.dark) .text-slate-200,
+html:not(.dark) .text-slate-300 {
+  color: #1e293b !important; /* slate-800 - dark, bold and clear */
+}
+
+html:not(.dark) .text-slate-400 {
+  color: #475569 !important; /* slate-600 - high contrast subtext */
+}
+
+html:not(.dark) .text-slate-500 {
+  color: #64748b !important; /* slate-500 */
+}
+
+html:not(.dark) input,
+html:not(.dark) select,
+html:not(.dark) textarea {
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+html:not(.dark) .hover\:bg-slate-800:hover,
+html:not(.dark) .hover\:bg-slate-800\/40:hover,
+html:not(.dark) .hover\:bg-slate-800\/60:hover {
+  background-color: #f1f5f9 !important;
+}
+
+html:not(.dark) .hover\:bg-slate-700:hover {
+  background-color: #e2e8f0 !important;
+}
+
+html:not(.dark) .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
+html:not(.dark) .divide-slate-800\/80 > :not([hidden]) ~ :not([hidden]),
+html:not(.dark) .divide-slate-800\/60 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e2e8f0 !important;
+}
+
+/* Print Styles for Invoice Download & PDF */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  /* Hide app navigation and headers during printing */
+  aside, nav, header, .print\:hidden {
+    display: none !important;
+  }
+
+  /* Make invoice sheet take full page */
+  #printable-invoice {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    box-shadow: none !important;
+  }
+
+  #printable-invoice * {
+    visibility: visible !important;
+    color: #0f172a !important;
+  }
+
+  #printable-invoice table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  #printable-invoice th,
+  #printable-invoice td {
+    border: 1px solid #cbd5e1 !important;
+  }
 }
