@@ -144,6 +144,27 @@ sudo certbot --nginx -d yourdomain.com -d mail.yourdomain.com --non-interactive 
 
 ---
 
+## 🛡️ 100% Inbox Deliverability & Spam Prevention Checklist
+
+To ensure emails sent from your server (and all custom tenant domains like `@dorja.io`) land directly in **Gmail / Yahoo / Outlook Inbox** (not Spam):
+
+### 1. Reverse DNS (PTR Record) on VPS Provider *(Crucial)*
+- Go to your VPS Control Panel (Hostinger / Hetzner / DigitalOcean) ➔ **IP Management** / **Reverse DNS**.
+- Set the PTR record for your VPS IP `YOUR_VPS_IP` to: **`mail.yourdomain.com`**.
+- This satisfies Gmail's Mandatory PTR validation check.
+
+### 2. Main Server A Record
+- In your main domain DNS (e.g. `kidukart.com`), ensure `mail` has an **A Record** pointing to `YOUR_VPS_IP` with **DNS only (Gray Cloud ☁️)**.
+
+### 3. Tenant / Custom Domain DNS Settings (e.g. `dorja.io`)
+Each custom domain added to the platform must add these 4 records in their Cloudflare / DNS:
+- **MX**: `@` ➔ `mail.yourdomain.com` (Priority 10)
+- **TXT (SPF)**: `@` ➔ `v=spf1 ip4:YOUR_VPS_IP ~all`
+- **TXT (DMARC)**: `_dmarc` ➔ `v=DMARC1; p=none; sp=none;`
+- **TXT (DKIM)**: `mail._domainkey` ➔ (Generated automatically in the Domain Settings modal)
+
+---
+
 ## 🔄 Updating to Latest Changes in Future
 Whenever updates are pushed to GitHub, run:
 ```bash
@@ -153,4 +174,5 @@ node scripts/setup-db.js
 npm run build
 pm2 restart mailbox-app
 ```
+
 
