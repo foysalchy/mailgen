@@ -19,7 +19,7 @@ export async function GET(request: Request) {
 
     // If fetching full conversation thread for a specific subject
     if (threadSubject) {
-      // Normalize subject: remove Re:, Fwd:, [Ticket-xxx]
+      // Normalize subject: remove Re:, Fwd:, FW:
       const cleanSubject = threadSubject.replace(/^(re|fwd|fw):\s*/i, '').trim();
       const [threadMsgs]: any = await pool.query(
         `SELECT m.id, m.mailbox_id, m.folder, m.sender, m.sender_name, m.recipients, m.subject, 
@@ -29,18 +29,18 @@ export async function GET(request: Request) {
          FROM webmail_messages m
          WHERE m.mailbox_id = ? 
            AND (
-             m.subject = ? 
-             OR m.subject = ? 
+             TRIM(REGEXP_REPLACE(m.subject, '^(?i)(re|fwd|fw):\\\\s*', '')) = ?
              OR m.subject = ?
-             OR m.subject LIKE ?
+             OR m.subject = ?
+             OR m.subject = ?
            )
          ORDER BY m.created_at ASC`,
         [
           mailboxId,
           cleanSubject,
+          cleanSubject,
           `Re: ${cleanSubject}`,
           `Fwd: ${cleanSubject}`,
-          `%${cleanSubject}%`,
         ]
       );
 
