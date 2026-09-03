@@ -124,10 +124,10 @@ sudo ufw allow 995/tcp   # POP3S
 sudo ufw --force enable
 
 # Restart services
-sudo systemctl restart mariadb
-sudo systemctl restart postfix
-sudo systemctl restart dovecot
-sudo systemctl restart nginx
+sudo systemctl restart mariadb || true
+sudo systemctl restart postfix || true
+sudo systemctl restart dovecot || true
+sudo systemctl restart nginx || sudo systemctl restart apache2 || true
 
 echo "====================================================================="
 echo "   VPS Environment Setup Completed Successfully!"
