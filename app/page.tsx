@@ -81,6 +81,8 @@ import {
   ReplyAll,
   Forward,
   X,
+  Menu,
+  ArrowLeft,
 } from 'lucide-react';
 
 export default function MailboxApp() {
@@ -119,9 +121,19 @@ export default function MailboxApp() {
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Dashboard Navigation tabs: 'overview' | 'webmail' | 'domains' | 'mailboxes' | 'bulk' | 'subscriptions' | 'superadmin' | 'subusers' | 'apikeys' | 'templates' | 'billing' | 'settings'
-  const [activeTab, setActiveTab] = useState<'overview' | 'webmail' | 'domains' | 'mailboxes' | 'bulk' | 'subscriptions' | 'superadmin' | 'subusers' | 'apikeys' | 'templates' | 'billing' | 'settings'>('overview');
+  const [activeTab, setActiveTabState] = useState<'overview' | 'webmail' | 'domains' | 'mailboxes' | 'bulk' | 'subscriptions' | 'superadmin' | 'subusers' | 'apikeys' | 'templates' | 'billing' | 'settings'>('overview');
+
+  // URL Hash Sync for Hard Route Persistence across browser reloads
+  const setActiveTab = (tab: 'overview' | 'webmail' | 'domains' | 'mailboxes' | 'bulk' | 'subscriptions' | 'superadmin' | 'subusers' | 'apikeys' | 'templates' | 'billing' | 'settings') => {
+    setActiveTabState(tab);
+    setMobileSidebarOpen(false); // Auto close mobile drawer on navigation
+    if (typeof window !== 'undefined') {
+      window.location.hash = tab;
+    }
+  };
 
   // Company Information, Email Signature/Footer & User Profile Settings State
   const [companySettingsForm, setCompanySettingsForm] = useState({
@@ -342,7 +354,7 @@ export default function MailboxApp() {
     bulk_mail_daily_limit: 1000,
   });
 
-  // Check saved session & theme on mount
+  // Check saved session, theme, and active URL route hash on mount
   useEffect(() => {
     fetchPlans();
     const saved = localStorage.getItem('mailbox_user');
@@ -361,6 +373,26 @@ export default function MailboxApp() {
     } else {
       document.documentElement.classList.add('dark');
     }
+
+    // Read URL hash on load (e.g. #domains, #webmail, #mailboxes, #settings, etc.)
+    if (typeof window !== 'undefined') {
+      const rawHash = window.location.hash.replace('#', '').trim();
+      const validTabs = ['overview', 'webmail', 'domains', 'mailboxes', 'bulk', 'subscriptions', 'superadmin', 'subusers', 'apikeys', 'templates', 'billing', 'settings'];
+      if (rawHash && validTabs.includes(rawHash)) {
+        setActiveTabState(rawHash as any);
+      }
+
+      // Listen for browser back / forward buttons
+      const handleHashChange = () => {
+        const h = window.location.hash.replace('#', '').trim();
+        if (h && validTabs.includes(h)) {
+          setActiveTabState(h as any);
+        }
+      };
+      window.addEventListener('hashchange', handleHashChange);
+      return () => window.removeEventListener('hashchange', handleHashChange);
+    }
+
     setAuthChecking(false);
   }, []);
 
@@ -2923,14 +2955,58 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
   // MAIN DASHBOARD INTERFACE
   // =========================================================================
   return (
-    <div className="flex h-screen w-full bg-slate-950 text-slate-100 font-sans overflow-hidden">
-      {/* 1. Global Navigation Sidebar (Collapsible with Hover Tooltips) */}
+    <div className="flex flex-col md:flex-row h-screen w-full bg-slate-950 text-slate-100 font-sans overflow-hidden">
+      {/* Mobile Top Header (Visible only on small screens) */}
+      <div className="md:hidden flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800 z-40 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setMobileSidebarOpen(true)}
+            className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 focus:outline-none"
+            title="Open Menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#925ce9] to-indigo-500 flex items-center justify-center shadow-sm">
+              <Mail className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-bold text-sm text-white">MailBox Pro</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleTheme}
+            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+            className="p-2 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition-colors"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-300" />}
+          </button>
+          <button
+            onClick={handleLogout}
+            title="Log Out"
+            className="p-2 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Sidebar Backdrop Overlay */}
+      {mobileSidebarOpen && (
+        <div
+          onClick={() => setMobileSidebarOpen(false)}
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 md:hidden animate-fadeIn"
+        />
+      )}
+
+      {/* 1. Global Navigation Sidebar (Collapsible on Desktop, Off-canvas Drawer on Mobile) */}
       <aside
-        className={`bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0 transition-all duration-300 relative z-30 ${
-          sidebarCollapsed ? 'w-16' : 'w-64'
-        }`}
+        className={`fixed md:relative inset-y-0 left-0 z-50 md:z-30 bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0 transition-all duration-300 ${
+          mobileSidebarOpen ? 'translate-x-0 w-64 shadow-2xl' : '-translate-x-full md:translate-x-0'
+        } ${sidebarCollapsed ? 'md:w-16' : 'md:w-64'}`}
       >
-        <div>
+        <div className="overflow-y-auto flex-1">
           {/* Brand Logo, User Info & Collapse Toggle */}
           <div className="p-3.5 border-b border-slate-800">
             <div className="flex items-center justify-between">
@@ -2938,7 +3014,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#925ce9] to-indigo-500 flex items-center justify-center shadow-lg shadow-[#925ce9]/25 shrink-0">
                   <Mail className="w-4.5 h-4.5 text-white" />
                 </div>
-                {!sidebarCollapsed && (
+                {(!sidebarCollapsed || mobileSidebarOpen) && (
                   <div className="overflow-hidden">
                     <h1 className="font-bold text-sm text-white truncate">MailBox Pro</h1>
                     <p className="text-[10px] text-[#925ce9] font-semibold truncate">{currentUser.plan_name || 'Active'}</p>
@@ -2946,17 +3022,26 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 )}
               </div>
 
-              {/* Sidebar Collapse Toggle Button */}
-              <button
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                title={sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors shrink-0"
-              >
-                {sidebarCollapsed ? <PanelLeft className="w-4 h-4 text-[#925ce9]" /> : <PanelLeftClose className="w-4 h-4" />}
-              </button>
+              {/* Close Button on Mobile / Collapse on Desktop */}
+              <div className="flex items-center">
+                <button
+                  onClick={() => setMobileSidebarOpen(false)}
+                  className="md:hidden p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                  title="Close Menu"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                  title={sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+                  className="hidden md:block p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors shrink-0"
+                >
+                  {sidebarCollapsed ? <PanelLeft className="w-4 h-4 text-[#925ce9]" /> : <PanelLeftClose className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
-            {!sidebarCollapsed && (
+            {(!sidebarCollapsed || mobileSidebarOpen) && (
               <div className="mt-3 pt-3 border-t border-slate-800/80">
                 {currentUser.company_name && (
                   <div className="mb-2 px-2 py-1 bg-slate-800/80 rounded-lg border border-slate-700/60 flex items-center gap-1.5 text-xs text-amber-300">
@@ -3005,10 +3090,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 activeTab === 'overview'
                   ? 'bg-[#925ce9] text-white shadow-lg shadow-[#925ce9]/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              } ${sidebarCollapsed ? 'justify-center' : ''}`}
+              } ${sidebarCollapsed && !mobileSidebarOpen ? 'justify-center' : ''}`}
             >
               <LayoutDashboard className={`w-4 h-4 shrink-0 ${activeTab === 'overview' ? 'text-white' : 'text-[#925ce9]'}`} />
-              {!sidebarCollapsed && <span>Dashboard Overview</span>}
+              {(!sidebarCollapsed || mobileSidebarOpen) && <span>Dashboard Overview</span>}
             </button>
 
             <button
@@ -3022,10 +3107,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 activeTab === 'webmail'
                   ? 'bg-[#925ce9] text-white shadow-lg shadow-[#925ce9]/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              } ${sidebarCollapsed ? 'justify-center' : ''}`}
+              } ${sidebarCollapsed && !mobileSidebarOpen ? 'justify-center' : ''}`}
             >
               <Inbox className="w-4 h-4 shrink-0" />
-              {!sidebarCollapsed && <span>Webmail Client</span>}
+              {(!sidebarCollapsed || mobileSidebarOpen) && <span>Webmail Client</span>}
             </button>
 
             {/* Domains Tab */}
@@ -3037,10 +3122,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   activeTab === 'domains'
                     ? 'bg-[#925ce9] text-white shadow-lg shadow-[#925ce9]/30'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                } ${sidebarCollapsed ? 'justify-center' : ''}`}
+                } ${sidebarCollapsed && !mobileSidebarOpen ? 'justify-center' : ''}`}
               >
                 <Globe className="w-4 h-4 shrink-0" />
-                {!sidebarCollapsed && (
+                {(!sidebarCollapsed || mobileSidebarOpen) && (
                   <>
                     <span>Custom Domains</span>
                     <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">{domains.length}</span>
@@ -3058,10 +3143,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   activeTab === 'mailboxes'
                     ? 'bg-[#925ce9] text-white shadow-lg shadow-[#925ce9]/30'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                } ${sidebarCollapsed ? 'justify-center' : ''}`}
+                } ${sidebarCollapsed && !mobileSidebarOpen ? 'justify-center' : ''}`}
               >
                 <Users className="w-4 h-4 shrink-0" />
-                {!sidebarCollapsed && (
+                {(!sidebarCollapsed || mobileSidebarOpen) && (
                   <>
                     <span>Mailboxes (Users)</span>
                     <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">
@@ -3084,10 +3169,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   activeTab === 'bulk'
                     ? 'bg-[#925ce9] text-white shadow-lg shadow-[#925ce9]/30'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                } ${sidebarCollapsed ? 'justify-center' : ''}`}
+                } ${sidebarCollapsed && !mobileSidebarOpen ? 'justify-center' : ''}`}
               >
                 <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-                {!sidebarCollapsed && <span>Bulk Campaigns</span>}
+                {(!sidebarCollapsed || mobileSidebarOpen) && <span>Bulk Campaigns</span>}
               </button>
             )}
 
@@ -3103,10 +3188,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   activeTab === 'apikeys'
                     ? 'bg-[#925ce9] text-white shadow-lg shadow-[#925ce9]/30'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                } ${sidebarCollapsed ? 'justify-center' : ''}`}
+                } ${sidebarCollapsed && !mobileSidebarOpen ? 'justify-center' : ''}`}
               >
                 <KeyRound className="w-4 h-4 text-emerald-400 shrink-0" />
-                {!sidebarCollapsed && (
+                {(!sidebarCollapsed || mobileSidebarOpen) && (
                   <>
                     <span>Email REST API</span>
                     <span className="ml-auto text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-mono">v1</span>
@@ -3126,10 +3211,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 activeTab === 'templates'
                   ? 'bg-[#925ce9] text-white shadow-lg shadow-[#925ce9]/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              } ${sidebarCollapsed ? 'justify-center' : ''}`}
+              } ${sidebarCollapsed && !mobileSidebarOpen ? 'justify-center' : ''}`}
             >
               <FileText className="w-4 h-4 text-indigo-400 shrink-0" />
-              {!sidebarCollapsed && (
+              {(!sidebarCollapsed || mobileSidebarOpen) && (
                 <>
                   <span>Email Templates</span>
                   <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">{emailTemplates.length}</span>
@@ -3148,10 +3233,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   activeTab === 'billing'
                     ? 'bg-[#925ce9] text-white shadow-lg shadow-[#925ce9]/30'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                } ${sidebarCollapsed ? 'justify-center' : ''}`}
+                } ${sidebarCollapsed && !mobileSidebarOpen ? 'justify-center' : ''}`}
               >
                 <Receipt className="w-4 h-4 text-amber-400 shrink-0" />
-                {!sidebarCollapsed && (
+                {(!sidebarCollapsed || mobileSidebarOpen) && (
                   <>
                     <span>Billing & Invoices</span>
                     {billingSummary?.pendingUpgrade && (
@@ -3173,10 +3258,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 title="Super Admin Control Panel"
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   activeTab === 'superadmin' ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30' : 'text-purple-300 hover:text-white hover:bg-purple-900/30'
-                } ${sidebarCollapsed ? 'justify-center' : ''}`}
+                } ${sidebarCollapsed && !mobileSidebarOpen ? 'justify-center' : ''}`}
               >
                 <ShieldCheck className="w-4 h-4 text-purple-400 shrink-0" />
-                {!sidebarCollapsed && <span>Super Admin Panel</span>}
+                {(!sidebarCollapsed || mobileSidebarOpen) && <span>Super Admin Panel</span>}
               </button>
             )}
 
@@ -3190,17 +3275,17 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                 activeTab === 'settings'
                   ? 'bg-[#925ce9] text-white shadow-lg shadow-[#925ce9]/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              } ${sidebarCollapsed ? 'justify-center' : ''}`}
+              } ${sidebarCollapsed && !mobileSidebarOpen ? 'justify-center' : ''}`}
             >
               <Settings2 className="w-4 h-4 text-slate-400 shrink-0" />
-              {!sidebarCollapsed && <span>Settings & Profile</span>}
+              {(!sidebarCollapsed || mobileSidebarOpen) && <span>Settings & Profile</span>}
             </button>
           </nav>
         </div>
 
         {/* Storage Bar & Quota Warnings */}
-        <div className="p-3 border-t border-slate-800 bg-slate-900/50">
-          {!sidebarCollapsed ? (
+        <div className="p-3 border-t border-slate-800 bg-slate-900/50 shrink-0">
+          {(!sidebarCollapsed || mobileSidebarOpen) ? (
             <>
               <div className="flex items-center justify-between text-[11px] mb-1.5 font-medium">
                 <span className="flex items-center gap-1.5 text-slate-300">
@@ -3543,9 +3628,11 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
         {/* ===================== VIEW 1: WEBMAIL CLIENT ===================== */}
         {activeTab === 'webmail' && (
-          <div className="flex-1 flex w-full overflow-hidden">
-            {/* Folder & Labels sidebar */}
-            <div className="w-60 bg-slate-900/70 border-r border-slate-800 p-3 flex flex-col justify-between shrink-0 overflow-y-auto">
+          <div className="flex-1 flex w-full overflow-hidden relative">
+            {/* Folder & Labels sidebar (Collapsible on mobile) */}
+            <div className={`w-60 bg-slate-900/70 border-r border-slate-800 p-3 flex flex-col justify-between shrink-0 overflow-y-auto ${
+              selectedMessage ? 'hidden lg:flex' : 'hidden md:flex'
+            }`}>
               <div>
                 <button
                   onClick={() => {
@@ -3728,8 +3815,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </div>
             </div>
 
-            {/* Email list pane */}
-            <div className="w-80 border-r border-slate-800 flex flex-col shrink-0 bg-slate-900/30">
+            {/* Email list pane (Mobile full width if no message selected, else hidden on mobile when reading message) */}
+            <div className={`w-full md:w-80 lg:w-88 border-r border-slate-800 flex flex-col shrink-0 bg-slate-900/30 ${
+              selectedMessage ? 'hidden md:flex' : 'flex'
+            }`}>
               <div className="p-3 border-b border-slate-800">
                 <div className="relative">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -3871,21 +3960,31 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </div>
             </div>
 
-            {/* Email reader pane (Gmail Style Conversation Thread) */}
-            <div className="flex-1 flex flex-col bg-slate-950 overflow-y-auto">
+            {/* Email reader pane (Gmail Style Conversation Thread - responsive with Mobile Back button) */}
+            <div className={`flex-1 flex flex-col bg-slate-950 overflow-y-auto ${
+              selectedMessage ? 'flex' : 'hidden md:flex'
+            }`}>
               {selectedMessage ? (
-                <div className="p-6 max-w-4xl space-y-5">
-                  {/* Thread Subject Header */}
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                <div className="p-4 sm:p-6 max-w-4xl space-y-5">
+                  {/* Thread Subject Header & Mobile Back Button */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-4 gap-3">
                     <div className="flex items-center gap-3">
-                      <h2 className="text-xl font-bold text-white tracking-tight">
+                      {/* Mobile Back Button to list */}
+                      <button
+                        onClick={() => setSelectedMessage(null)}
+                        className="md:hidden p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                        title="Back to inbox list"
+                      >
+                        <ArrowLeft className="w-5 h-5 text-[#925ce9]" />
+                      </button>
+                      <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight break-words">
                         {selectedMessage.subject || '(No Subject)'}
                       </h2>
-                      <span className="px-2 py-0.5 text-[10px] font-semibold uppercase bg-slate-800 text-slate-300 rounded border border-slate-700">
+                      <span className="px-2 py-0.5 text-[10px] font-semibold uppercase bg-slate-800 text-slate-300 rounded border border-slate-700 shrink-0">
                         {currentFolder}
                       </span>
                       {threadMessages.length > 1 && (
-                        <span className="px-2 py-0.5 text-xs font-bold bg-[#925ce9]/20 text-[#925ce9] rounded-full border border-[#925ce9]/30">
+                        <span className="px-2 py-0.5 text-xs font-bold bg-[#925ce9]/20 text-[#925ce9] rounded-full border border-[#925ce9]/30 shrink-0">
                           {threadMessages.length} messages
                         </span>
                       )}
