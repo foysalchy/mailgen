@@ -194,6 +194,14 @@ export default function MailboxApp() {
   const [messages, setMessages] = useState<any[]>([]);
   const [selectedMessage, setSelectedMessage] = useState<any>(null);
   const [selectedMessageIds, setSelectedMessageIds] = useState<number[]>([]);
+  const [threadMessages, setThreadMessages] = useState<any[]>([]);
+  const [loadingThread, setLoadingThread] = useState(false);
+  const [collapsedThreadIds, setCollapsedThreadIds] = useState<number[]>([]);
+  const [inlineReplyOpen, setInlineReplyOpen] = useState(false);
+  const [inlineReplyMode, setInlineReplyMode] = useState<'reply' | 'replyAll' | 'forward'>('reply');
+  const [inlineReplyBody, setInlineReplyBody] = useState('');
+  const [inlineReplyTo, setInlineReplyTo] = useState('');
+  const [inlineReplySending, setInlineReplySending] = useState(false);
   const [starredTotal, setStarredTotal] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -905,8 +913,50 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
     } else {
       setMessages([]);
       setSelectedMessage(null);
+      setThreadMessages([]);
     }
   }, [selectedMailbox, currentFolder, activeCustomFolder, activeLabel]);
+
+  // Fetch full conversation thread whenever a message is selected
+  const fetchThreadMessages = async (mailboxId: number, subject: string, initialMsg: any) => {
+    if (!mailboxId || !subject) {
+      setThreadMessages(initialMsg ? [initialMsg] : []);
+      return;
+    }
+    setLoadingThread(true);
+    try {
+      const res = await fetch(`/api/webmail/messages?mailboxId=${mailboxId}&threadSubject=${encodeURIComponent(subject)}`);
+      const data = await res.json();
+      if (data.success && data.threadMessages && data.threadMessages.length > 0) {
+        setThreadMessages(data.threadMessages);
+        // Default collapse older messages if thread is long, keeping the latest 1 expanded
+        if (data.threadMessages.length > 1) {
+          const olderIds = data.threadMessages.slice(0, -1).map((m: any) => m.id);
+          setCollapsedThreadIds(olderIds);
+        } else {
+          setCollapsedThreadIds([]);
+        }
+      } else {
+        setThreadMessages(initialMsg ? [initialMsg] : []);
+        setCollapsedThreadIds([]);
+      }
+    } catch (err) {
+      console.error(err);
+      setThreadMessages(initialMsg ? [initialMsg] : []);
+    } finally {
+      setLoadingThread(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedMessage && selectedMailbox?.id) {
+      fetchThreadMessages(selectedMailbox.id, selectedMessage.subject, selectedMessage);
+      setInlineReplyOpen(false);
+      setInlineReplyBody('');
+    } else {
+      setThreadMessages([]);
+    }
+  }, [selectedMessage?.id]);
 
   const fetchPlans = async () => {
     try {
@@ -1524,6 +1574,64 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
     setIsComposeMinimized(false);
     setComposeModal(true);
     toast.info('Forwarding message - enter recipient email');
+  };
+
+  // Inline Fast Reply (Gmail Style inline box at bottom of conversation)
+  const handleSendInlineReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedMailbox?.id || !selectedMessage) return;
+    if (!inlineReplyBody.trim()) {
+      toast.warning('Please enter a reply message.');
+      return;
+    }
+
+    let recipient = inlineReplyTo.trim();
+    if (!recipient) {
+      recipient = selectedMessage.sender?.includes('<')
+        ? selectedMessage.sender.match(/<([^>]+)>/)?.[1] || selectedMessage.sender
+        : selectedMessage.sender;
+    }
+
+    let subject = selectedMessage.subject || '';
+    if (inlineReplyMode === 'forward' && !subject.toLowerCase().startsWith('fwd:')) {
+      subject = `Fwd: ${subject}`;
+    } else if (!subject.toLowerCase().startsWith('re:')) {
+      subject = `Re: ${subject}`;
+    }
+
+    setInlineReplySending(true);
+    try {
+      const res = await fetch('/api/webmail/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'send',
+          mailboxId: selectedMailbox.id,
+          to: recipient,
+          subject,
+          bodyText: inlineReplyBody,
+          bodyHtml: `<div style="font-family: sans-serif; font-size: 14px; line-height: 1.6; color: #1e293b;">
+            <p>${inlineReplyBody.replace(/\n/g, '<br/>')}</p>
+          </div>`,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setInlineReplyBody('');
+        setInlineReplyOpen(false);
+        toast.success('Reply sent successfully!');
+        // Refresh thread & messages
+        fetchThreadMessages(selectedMailbox.id, selectedMessage.subject, selectedMessage);
+        fetchMessages(selectedMailbox.id);
+      } else {
+        toast.error(data.message || 'Failed to send reply');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error sending reply');
+    } finally {
+      setInlineReplySending(false);
+    }
   };
 
   const handleCreateGroup = async (e: React.FormEvent) => {
@@ -3614,144 +3722,276 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </div>
             </div>
 
-            {/* Email reader pane */}
+            {/* Email reader pane (Gmail Style Conversation Thread) */}
             <div className="flex-1 flex flex-col bg-slate-950 overflow-y-auto">
               {selectedMessage ? (
-                <div className="p-6 max-w-4xl">
-                  <div className="flex items-start justify-between border-b border-slate-800 pb-5 mb-6">
-                    <div>
-                      <h2 className="text-xl font-bold text-white mb-2">{selectedMessage.subject}</h2>
-                      <div className="flex items-center gap-3 text-xs text-slate-400">
-                        <span className="font-semibold text-slate-200">From: {selectedMessage.sender_name || selectedMessage.sender}</span>
-                        <span>•</span>
-                        <span>To: {selectedMessage.recipients}</span>
-                        <span>•</span>
-                        <span>{new Date(selectedMessage.created_at).toLocaleString()}</span>
-                      </div>
+                <div className="p-6 max-w-4xl space-y-5">
+                  {/* Thread Subject Header */}
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-xl font-bold text-white tracking-tight">
+                        {selectedMessage.subject || '(No Subject)'}
+                      </h2>
+                      <span className="px-2 py-0.5 text-[10px] font-semibold uppercase bg-slate-800 text-slate-300 rounded border border-slate-700">
+                        {currentFolder}
+                      </span>
+                      {threadMessages.length > 1 && (
+                        <span className="px-2 py-0.5 text-xs font-bold bg-[#925ce9]/20 text-[#925ce9] rounded-full border border-[#925ce9]/30">
+                          {threadMessages.length} messages
+                        </span>
+                      )}
                     </div>
-                    {/* Action buttons: Reply, Forward, Star, Header Info, Archive, Trash, Spam, Permanent Delete */}
-                    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+
+                    {/* Top Action Toolbar */}
+                    <div className="flex items-center gap-1.5">
                       <button
-                        onClick={() => handleReplyMessage(selectedMessage, false)}
-                        title="Reply to Sender"
-                        className="px-3 py-1.5 bg-[#925ce9]/15 hover:bg-[#925ce9]/25 text-[#925ce9] border border-[#925ce9]/30 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold shadow-sm"
+                        onClick={() => setMessageHeadersModal(selectedMessage)}
+                        title="View Raw Headers"
+                        className="p-1.5 text-slate-400 hover:text-blue-400 rounded-lg hover:bg-slate-800 transition-colors"
                       >
-                        <Reply className="w-3.5 h-3.5" />
+                        <Info className="w-4 h-4 text-blue-400" />
+                      </button>
+                      <button
+                        onClick={() => handleToggleStar(selectedMessage.id, Boolean(selectedMessage.is_starred))}
+                        title="Star"
+                        className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition-colors"
+                      >
+                        <Star className={`w-4 h-4 ${selectedMessage.is_starred ? 'text-amber-400 fill-amber-400' : 'text-slate-400'}`} />
+                      </button>
+                      <button
+                        onClick={() => handleMoveMessage(selectedMessage.id, 'archive')}
+                        title="Archive"
+                        className="p-1.5 text-slate-400 hover:text-emerald-400 rounded-lg hover:bg-slate-800 transition-colors"
+                      >
+                        <Archive className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleMoveMessage(selectedMessage.id, 'trash')}
+                        title="Move to Trash"
+                        className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Conversation Messages Thread (Gmail Card List) */}
+                  <div className="space-y-4">
+                    {(threadMessages.length > 0 ? threadMessages : [selectedMessage]).map((msg, idx) => {
+                      const isCollapsed = collapsedThreadIds.includes(msg.id);
+                      const isLast = idx === (threadMessages.length > 0 ? threadMessages.length - 1 : 0);
+                      const senderInitial = (msg.sender_name || msg.sender || 'U').charAt(0).toUpperCase();
+
+                      return (
+                        <div
+                          key={msg.id || idx}
+                          className={`rounded-xl border transition-all ${
+                            isCollapsed
+                              ? 'bg-slate-900/40 border-slate-800/60 hover:bg-slate-900 hover:border-slate-700 cursor-pointer p-3'
+                              : 'bg-slate-900 border-slate-800 shadow-sm p-5'
+                          }`}
+                          onClick={() => {
+                            if (isCollapsed) {
+                              setCollapsedThreadIds((prev) => prev.filter((id) => id !== msg.id));
+                            }
+                          }}
+                        >
+                          {/* Message Header Bar */}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#925ce9] to-[#6d32d5] text-white text-xs font-bold flex items-center justify-center shrink-0 shadow">
+                                {senderInitial}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-bold text-white truncate">
+                                    {msg.sender_name || msg.sender}
+                                  </span>
+                                  <span className="text-[11px] text-slate-400 truncate hidden sm:inline">
+                                    &lt;{msg.sender}&gt;
+                                  </span>
+                                </div>
+                                {!isCollapsed && (
+                                  <div className="text-[11px] text-slate-400 mt-0.5 truncate">
+                                    to <span className="text-slate-300">{msg.recipients}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[11px] text-slate-400">
+                                {new Date(msg.created_at).toLocaleString([], {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+
+                              {isCollapsed ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setCollapsedThreadIds((prev) => prev.filter((id) => id !== msg.id));
+                                  }}
+                                  className="p-1 text-slate-500 hover:text-white rounded"
+                                  title="Expand message"
+                                >
+                                  <ChevronDown className="w-4 h-4" />
+                                </button>
+                              ) : (
+                                <div className="flex items-center gap-1">
+                                  {threadMessages.length > 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setCollapsedThreadIds((prev) => [...prev, msg.id]);
+                                      }}
+                                      className="p-1 text-slate-500 hover:text-white rounded"
+                                      title="Collapse message"
+                                    >
+                                      <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleReplyMessage(msg, false);
+                                    }}
+                                    className="p-1 text-slate-400 hover:text-[#925ce9] rounded"
+                                    title="Reply in popup modal"
+                                  >
+                                    <Reply className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Collapsed Snippet */}
+                          {isCollapsed ? (
+                            <p className="text-xs text-slate-400 truncate mt-2 pl-11">
+                              {msg.snippet || msg.body_text || 'Click to view full message...'}
+                            </p>
+                          ) : (
+                            /* Expanded Message Body */
+                            <div className="mt-4 pt-4 border-t border-slate-800/60 pl-11">
+                              <div
+                                className="prose prose-invert max-w-none text-slate-200 text-sm leading-relaxed overflow-x-auto"
+                                dangerouslySetInnerHTML={{
+                                  __html: msg.body_html || `<p>${msg.body_text || ''}</p>`,
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Gmail Style Quick Reply / Forward Trigger Cards */}
+                  {!inlineReplyOpen ? (
+                    <div className="pt-2 flex items-center gap-3">
+                      <button
+                        onClick={() => {
+                          setInlineReplyMode('reply');
+                          const lastMsg = threadMessages.length > 0 ? threadMessages[threadMessages.length - 1] : selectedMessage;
+                          const senderEmail = lastMsg.sender?.includes('<') ? lastMsg.sender.match(/<([^>]+)>/)?.[1] : lastMsg.sender;
+                          setInlineReplyTo(senderEmail || '');
+                          setInlineReplyOpen(true);
+                        }}
+                        className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700/80 hover:border-[#925ce9]/60 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
+                      >
+                        <Reply className="w-4 h-4 text-[#925ce9]" />
                         <span>Reply</span>
                       </button>
 
                       <button
-                        onClick={() => handleReplyMessage(selectedMessage, true)}
-                        title="Reply All"
-                        className="px-2.5 py-1.5 bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/80 rounded-lg transition-colors flex items-center gap-1 text-xs font-medium"
+                        onClick={() => {
+                          setInlineReplyMode('forward');
+                          setInlineReplyTo('');
+                          setInlineReplyOpen(true);
+                        }}
+                        className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700/80 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
                       >
-                        <ReplyAll className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="hidden sm:inline">Reply All</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleForwardMessage(selectedMessage)}
-                        title="Forward Email"
-                        className="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/80 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-medium"
-                      >
-                        <Forward className="w-3.5 h-3.5 text-slate-400" />
+                        <Forward className="w-4 h-4 text-slate-400" />
                         <span>Forward</span>
                       </button>
 
-                      <div className="h-4 w-[1px] bg-slate-800 mx-1 hidden sm:block"></div>
-
                       <button
-                        onClick={() => setMessageHeadersModal(selectedMessage)}
-                        title="View Full Email Headers & Diagnostic Info (cPanel / Gmail Style)"
-                        className="p-2 text-slate-400 hover:text-blue-400 rounded-lg hover:bg-slate-800 transition-colors flex items-center gap-1 text-xs font-semibold"
+                        onClick={() => handleReplyMessage(selectedMessage, false)}
+                        className="text-xs text-slate-400 hover:text-slate-200 ml-auto flex items-center gap-1 underline"
                       >
-                        <Info className="w-4 h-4 text-blue-400" />
-                        <span className="hidden lg:inline">Headers</span>
+                        <span>Open in full compose window</span>
                       </button>
-
-                      <button
-                        onClick={() => handleToggleStar(selectedMessage.id, Boolean(selectedMessage.is_starred))}
-                        title={selectedMessage.is_starred ? 'Unstar Message' : 'Star Message'}
-                        className="p-2 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition-colors"
-                      >
-                        <Star
-                          className={`w-4 h-4 ${
-                            selectedMessage.is_starred ? 'text-amber-400 fill-amber-400' : 'text-slate-400'
-                          }`}
-                        />
-                      </button>
-
-                      <button
-                        onClick={() => handleMoveMessage(selectedMessage.id, 'archive')}
-                        title="Archive Email"
-                        className="p-2 text-slate-400 hover:text-emerald-400 rounded-lg hover:bg-slate-800 transition-colors"
-                      >
-                        <Archive className="w-4 h-4" />
-                      </button>
-
-                      {currentUser?.role !== 'sub_user' || currentUser?.permissions?.canDeleteMail ? (
-                        <>
-                          <button
-                            onClick={() => handleMoveMessage(selectedMessage.id, 'trash')}
-                            title="Move to Trash"
-                            className="p-2 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleMoveMessage(selectedMessage.id, 'spam')}
-                            title="Mark as Spam"
-                            className="p-2 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition-colors"
-                          >
-                            <AlertOctagon className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeletePermanent(selectedMessage.id)}
-                            title="Delete Permanently"
-                            className="p-2 text-slate-400 hover:text-red-400 rounded-lg hover:bg-slate-800 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4 text-red-500" />
-                          </button>
-                        </>
-                      ) : (
-                        <span className="text-[11px] text-slate-500 italic bg-slate-900 px-2 py-1 rounded border border-slate-800">
-                          Delete permission restricted
-                        </span>
-                      )}
                     </div>
-                  </div>
+                  ) : (
+                    /* Gmail Style Inline Reply Box inside the Thread */
+                    <div className="bg-slate-900 border border-[#925ce9]/50 rounded-xl p-4 shadow-xl shadow-[#925ce9]/10 animate-fadeIn space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                            {inlineReplyMode === 'forward' ? <Forward className="w-3.5 h-3.5 text-blue-400" /> : <Reply className="w-3.5 h-3.5 text-[#925ce9]" />}
+                            {inlineReplyMode === 'forward' ? 'Forward' : 'Reply'} to:
+                          </span>
+                          <input
+                            type="text"
+                            value={inlineReplyTo}
+                            onChange={(e) => setInlineReplyTo(e.target.value)}
+                            placeholder="Recipient email address..."
+                            className="bg-slate-800 border border-slate-700 px-2.5 py-1 text-xs text-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#925ce9] min-w-[220px]"
+                          />
+                        </div>
 
-                  <div
-                    className="prose prose-invert max-w-none text-slate-300 text-sm leading-relaxed"
-                    dangerouslySetInnerHTML={{
-                      __html: selectedMessage.body_html || `<p>${selectedMessage.body_text || ''}</p>`,
-                    }}
-                  />
+                        <button
+                          onClick={() => setInlineReplyOpen(false)}
+                          className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800"
+                          title="Discard inline reply"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
 
-                  {/* Bottom Quick Reply & Forward Action Card (Gmail style) */}
-                  <div className="mt-8 pt-6 border-t border-slate-800/80 flex items-center gap-3">
-                    <button
-                      onClick={() => handleReplyMessage(selectedMessage, false)}
-                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700/80 hover:border-[#925ce9]/60 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
-                    >
-                      <Reply className="w-4 h-4 text-[#925ce9]" />
-                      <span>Reply</span>
-                    </button>
-                    <button
-                      onClick={() => handleReplyMessage(selectedMessage, true)}
-                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700/80 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
-                    >
-                      <ReplyAll className="w-4 h-4 text-slate-400" />
-                      <span>Reply All</span>
-                    </button>
-                    <button
-                      onClick={() => handleForwardMessage(selectedMessage)}
-                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700/80 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
-                    >
-                      <Forward className="w-4 h-4 text-slate-400" />
-                      <span>Forward</span>
-                    </button>
-                  </div>
+                      <textarea
+                        rows={4}
+                        autoFocus
+                        value={inlineReplyBody}
+                        onChange={(e) => setInlineReplyBody(e.target.value)}
+                        placeholder={`Write your ${inlineReplyMode === 'forward' ? 'forward message' : 'reply'}...`}
+                        className="w-full bg-slate-950 border border-slate-800 p-3 text-xs text-slate-200 placeholder-slate-500 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#925ce9] resize-none"
+                      />
+
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                          <span>Sender: <strong className="text-slate-300">{selectedMailbox?.email}</strong></span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setInlineReplyOpen(false)}
+                            className="px-3 py-1.5 text-xs text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                          >
+                            Cancel
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={inlineReplySending || !inlineReplyBody.trim()}
+                            onClick={handleSendInlineReply}
+                            className="px-5 py-1.5 bg-[#925ce9] hover:bg-[#7e43e5] disabled:opacity-50 text-white text-xs font-semibold rounded-lg shadow flex items-center gap-1.5 transition-all"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                            <span>{inlineReplySending ? 'Sending...' : 'Send'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-8 text-center">

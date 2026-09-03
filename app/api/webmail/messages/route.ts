@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import nodemailer from 'nodemailer';
 
-// GET messages for a specific folder/custom folder/mailbox
+// GET messages for a specific folder/custom folder/mailbox or thread
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -11,9 +11,40 @@ export async function GET(request: Request) {
     const customFolderId = searchParams.get('customFolderId');
     const labelId = searchParams.get('labelId');
     const search = searchParams.get('q') || '';
+    const threadSubject = searchParams.get('threadSubject');
 
     if (!mailboxId) {
       return NextResponse.json({ success: false, message: 'mailboxId is required' }, { status: 400 });
+    }
+
+    // If fetching full conversation thread for a specific subject
+    if (threadSubject) {
+      // Normalize subject: remove Re:, Fwd:, [Ticket-xxx]
+      const cleanSubject = threadSubject.replace(/^(re|fwd|fw):\s*/i, '').trim();
+      const [threadMsgs]: any = await pool.query(
+        `SELECT m.id, m.mailbox_id, m.folder, m.sender, m.sender_name, m.recipients, m.subject, 
+                m.body_html, m.body_text, m.headers_raw, SUBSTRING(m.body_text, 1, 150) as snippet, 
+                m.has_attachments, m.is_read, m.is_starred, m.scheduled_at, m.is_scheduled, m.size_kb, m.created_at,
+                (SELECT GROUP_CONCAT(cl.name, ':', cl.color) FROM message_labels ml JOIN custom_labels cl ON ml.label_id = cl.id WHERE ml.message_id = m.id) as labels
+         FROM webmail_messages m
+         WHERE m.mailbox_id = ? 
+           AND (
+             m.subject = ? 
+             OR m.subject = ? 
+             OR m.subject = ?
+             OR m.subject LIKE ?
+           )
+         ORDER BY m.created_at ASC`,
+        [
+          mailboxId,
+          cleanSubject,
+          `Re: ${cleanSubject}`,
+          `Fwd: ${cleanSubject}`,
+          `%${cleanSubject}%`,
+        ]
+      );
+
+      return NextResponse.json({ success: true, threadMessages: threadMsgs });
     }
 
     let query = `
