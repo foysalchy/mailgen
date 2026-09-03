@@ -77,6 +77,9 @@ import {
   HelpCircle,
   ChevronDown,
   CheckCheck,
+  Reply,
+  ReplyAll,
+  Forward,
   X,
 } from 'lucide-react';
 
@@ -1423,6 +1426,104 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
     } catch (err: any) {
       toast.error(err.message || 'Error sending email');
     }
+  };
+
+  // Reply & Forward Handlers (Gmail / cPanel style)
+  const handleReplyMessage = (msg: any, replyAll: boolean = false) => {
+    if (!msg) return;
+
+    // Sender's clean email address
+    const senderEmail = msg.sender?.includes('<') ? msg.sender.match(/<([^>]+)>/)?.[1] : msg.sender;
+    const recipientTo = senderEmail ? [senderEmail.trim()] : [];
+
+    // Reply subject with Re: prefix
+    let replySubject = msg.subject || '';
+    if (!replySubject.toLowerCase().startsWith('re:')) {
+      replySubject = `Re: ${replySubject}`;
+    }
+
+    // CC recipients if Reply All
+    let ccRecipients: string[] = [];
+    if (replyAll && msg.recipients) {
+      const allRecs = msg.recipients.split(/[,;]/).map((r: string) => r.trim()).filter((r: string) => r && !r.includes(selectedMailbox?.email));
+      ccRecipients = allRecs;
+    }
+
+    // Formatted quote header
+    const quoteHeader = `<br/><br/><div style="border-left: 2px solid #925ce9; padding-left: 12px; margin-top: 16px; color: #64748b; font-size: 13px;">
+      <p style="margin: 0 0 6px 0; font-weight: 600; color: #475569;">
+        On ${new Date(msg.created_at).toLocaleString()}, <strong>${msg.sender_name || msg.sender}</strong> wrote:
+      </p>
+      <div>${msg.body_html || `<p>${msg.body_text || ''}</p>`}</div>
+    </div>`;
+
+    setComposeData({
+      to: recipientTo.join(', '),
+      cc: ccRecipients.join(', '),
+      bcc: '',
+      toTags: recipientTo,
+      ccTags: ccRecipients,
+      bccTags: [],
+      toInput: '',
+      ccInput: '',
+      bccInput: '',
+      subject: replySubject,
+      bodyText: '',
+      bodyHtml: `<p></p>${quoteHeader}`,
+      priority: 'normal',
+      scheduledAt: '',
+    });
+
+    if (ccRecipients.length > 0) setShowCc(true);
+    setComposeEditorView('editor');
+    setIsComposeMinimized(false);
+    setComposeModal(true);
+    toast.info(`Replying to ${msg.sender_name || msg.sender}`);
+  };
+
+  const handleForwardMessage = (msg: any) => {
+    if (!msg) return;
+
+    // Forward subject with Fwd: prefix
+    let fwdSubject = msg.subject || '';
+    if (!fwdSubject.toLowerCase().startsWith('fwd:')) {
+      fwdSubject = `Fwd: ${fwdSubject}`;
+    }
+
+    // Forwarded message block
+    const fwdHeader = `<br/><br/><div style="border-left: 2px solid #3b82f6; padding-left: 12px; margin-top: 16px; font-size: 13px; color: #64748b;">
+      <p style="margin: 0 0 4px 0; font-weight: 600; color: #3b82f6;">---------- Forwarded message ---------</p>
+      <p style="margin: 2px 0;"><strong>From:</strong> ${msg.sender_name || msg.sender} &lt;${msg.sender}&gt;</p>
+      <p style="margin: 2px 0;"><strong>Date:</strong> ${new Date(msg.created_at).toLocaleString()}</p>
+      <p style="margin: 2px 0;"><strong>Subject:</strong> ${msg.subject || '(No Subject)'}</p>
+      <p style="margin: 2px 0 10px 0;"><strong>To:</strong> ${msg.recipients || ''}</p>
+      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 8px 0;"/>
+      <div>${msg.body_html || `<p>${msg.body_text || ''}</p>`}</div>
+    </div>`;
+
+    setComposeData({
+      to: '',
+      cc: '',
+      bcc: '',
+      toTags: [],
+      ccTags: [],
+      bccTags: [],
+      toInput: '',
+      ccInput: '',
+      bccInput: '',
+      subject: fwdSubject,
+      bodyText: '',
+      bodyHtml: `<p></p>${fwdHeader}`,
+      priority: 'normal',
+      scheduledAt: '',
+    });
+
+    setShowCc(false);
+    setShowBcc(false);
+    setComposeEditorView('editor');
+    setIsComposeMinimized(false);
+    setComposeModal(true);
+    toast.info('Forwarding message - enter recipient email');
   };
 
   const handleCreateGroup = async (e: React.FormEvent) => {
@@ -3528,15 +3629,44 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                         <span>{new Date(selectedMessage.created_at).toLocaleString()}</span>
                       </div>
                     </div>
-                    {/* Action buttons: Star, Header Info (Show Original), Archive, Trash, Spam, Permanent Delete */}
-                    <div className="flex items-center gap-1.5">
+                    {/* Action buttons: Reply, Forward, Star, Header Info, Archive, Trash, Spam, Permanent Delete */}
+                    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                      <button
+                        onClick={() => handleReplyMessage(selectedMessage, false)}
+                        title="Reply to Sender"
+                        className="px-3 py-1.5 bg-[#925ce9]/15 hover:bg-[#925ce9]/25 text-[#925ce9] border border-[#925ce9]/30 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold shadow-sm"
+                      >
+                        <Reply className="w-3.5 h-3.5" />
+                        <span>Reply</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleReplyMessage(selectedMessage, true)}
+                        title="Reply All"
+                        className="px-2.5 py-1.5 bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/80 rounded-lg transition-colors flex items-center gap-1 text-xs font-medium"
+                      >
+                        <ReplyAll className="w-3.5 h-3.5 text-slate-400" />
+                        <span className="hidden sm:inline">Reply All</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleForwardMessage(selectedMessage)}
+                        title="Forward Email"
+                        className="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/80 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-medium"
+                      >
+                        <Forward className="w-3.5 h-3.5 text-slate-400" />
+                        <span>Forward</span>
+                      </button>
+
+                      <div className="h-4 w-[1px] bg-slate-800 mx-1 hidden sm:block"></div>
+
                       <button
                         onClick={() => setMessageHeadersModal(selectedMessage)}
                         title="View Full Email Headers & Diagnostic Info (cPanel / Gmail Style)"
                         className="p-2 text-slate-400 hover:text-blue-400 rounded-lg hover:bg-slate-800 transition-colors flex items-center gap-1 text-xs font-semibold"
                       >
                         <Info className="w-4 h-4 text-blue-400" />
-                        <span className="hidden sm:inline">Header Info</span>
+                        <span className="hidden lg:inline">Headers</span>
                       </button>
 
                       <button
@@ -3597,6 +3727,31 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                       __html: selectedMessage.body_html || `<p>${selectedMessage.body_text || ''}</p>`,
                     }}
                   />
+
+                  {/* Bottom Quick Reply & Forward Action Card (Gmail style) */}
+                  <div className="mt-8 pt-6 border-t border-slate-800/80 flex items-center gap-3">
+                    <button
+                      onClick={() => handleReplyMessage(selectedMessage, false)}
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700/80 hover:border-[#925ce9]/60 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
+                    >
+                      <Reply className="w-4 h-4 text-[#925ce9]" />
+                      <span>Reply</span>
+                    </button>
+                    <button
+                      onClick={() => handleReplyMessage(selectedMessage, true)}
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700/80 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
+                    >
+                      <ReplyAll className="w-4 h-4 text-slate-400" />
+                      <span>Reply All</span>
+                    </button>
+                    <button
+                      onClick={() => handleForwardMessage(selectedMessage)}
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700/80 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
+                    >
+                      <Forward className="w-4 h-4 text-slate-400" />
+                      <span>Forward</span>
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-8 text-center">
