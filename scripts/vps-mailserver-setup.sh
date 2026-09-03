@@ -20,7 +20,8 @@ echo "====================================================================="
 
 # 1. System Update
 echo "[1/8] Updating system packages..."
-sudo apt update && sudo apt upgrade -y
+sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
+sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
 
 # 2. Install Dependencies (MariaDB, Nginx, Postfix, Dovecot, OpenDKIM, Certbot, Git, Curl)
 echo "[2/8] Installing Web, Database, and Mail server packages..."
