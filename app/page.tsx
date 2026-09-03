@@ -2170,25 +2170,26 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
   // =========================================================================
   if (!currentUser) {
     return (
-      <div className="min-h-screen w-full bg-slate-950 text-slate-100 flex flex-col font-sans">
-        <header className="border-b border-slate-800/80 px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#925ce9] to-indigo-600 flex items-center justify-center shadow-lg shadow-[#925ce9]/20">
+      <div className="min-h-screen w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors">
+        {/* Sticky Premium Navigation Header */}
+        <header className="sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800/80 px-6 sm:px-10 py-3.5 flex items-center justify-between transition-colors shadow-sm">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setAuthMode('register'); setAuthStep('select_plan'); }}>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#925ce9] to-indigo-600 flex items-center justify-center shadow-lg shadow-[#925ce9]/25 text-white">
               <Mail className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-lg text-white">MailBox Pro</h1>
-              <p className="text-[11px] text-blue-400 font-medium">Enterprise Webmail & Cloud Email Platform</p>
+              <h1 className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white">MailBox Pro</h1>
+              <p className="text-[10px] text-[#925ce9] font-bold uppercase tracking-wider">Enterprise Cloud Mail</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 sm:gap-4">
             <button
               onClick={toggleTheme}
               title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
-              className="p-2 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-900 border border-slate-800 transition-colors"
+              className="p-2 text-slate-600 dark:text-slate-400 hover:text-amber-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors"
             >
-              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-300" />}
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
             </button>
 
             {authMode === 'register' ? (
@@ -2197,9 +2198,9 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   setAuthMode('login');
                   setAuthError('');
                 }}
-                className="text-xs font-semibold text-slate-300 hover:text-white px-4 py-2 rounded-lg border border-slate-700 bg-slate-900 transition-colors"
+                className="text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
               >
-                Already have an account? Sign In
+                Sign In
               </button>
             ) : (
               <button
@@ -2208,9 +2209,9 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   setAuthStep('select_plan');
                   setAuthError('');
                 }}
-                className="text-xs font-semibold bg-[#925ce9] hover:bg-[#7e43e5] text-white px-4 py-2 rounded-lg transition-colors shadow-md shadow-[#925ce9]/30"
+                className="text-xs font-bold bg-[#925ce9] hover:bg-[#7e43e5] text-white px-4 py-2 rounded-xl transition-colors shadow-md shadow-[#925ce9]/30"
               >
-                Get Started (Register)
+                Get Started
               </button>
             )}
           </div>
@@ -2275,31 +2276,31 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </form>
             </div>
           ) : authStep === 'select_plan' ? (
-            <div className="w-full max-w-7xl py-6 space-y-24">
-              {/* 1. HERO SECTION WITH RICH BRANDING */}
-              <div className="text-center space-y-6 pt-6 relative">
-                <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#925ce9]/10 border border-[#925ce9]/30 text-[#925ce9] text-xs font-bold tracking-wide shadow-sm shadow-[#925ce9]/10 animate-fade-in">
-                  <Sparkles className="w-4 h-4 text-[#925ce9]" />
-                  <span>Next-Gen Enterprise Mail Infrastructure & Multi-Tenant SaaS</span>
+            <div className="w-full max-w-7xl py-4 space-y-28">
+              {/* 1. HERO SECTION WITH RICH FLOATING BADGES & GRADIENTS */}
+              <div className="text-center space-y-7 pt-8 relative max-w-5xl mx-auto">
+                <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#925ce9]/10 border border-[#925ce9]/30 text-[#925ce9] text-xs font-bold tracking-wide shadow-sm">
+                  <Sparkles className="w-4 h-4 text-[#925ce9] animate-pulse" />
+                  <span>The #1 Self-Hosted Multi-Tenant Mail Infrastructure & SaaS Platform</span>
                 </div>
 
-                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.15] max-w-5xl mx-auto">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.12]">
                   High Deliverability, Lightning Fast & <br />
-                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#925ce9] via-indigo-400 to-purple-300">
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#925ce9] via-indigo-500 to-purple-400">
                     Self-Hosted Professional Mailboxes
                   </span>
                 </h1>
 
-                <p className="text-slate-300 text-base sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
-                  The complete all-in-one business email suite. Connect your custom domains, allocate storage quotas, manage team roles, send bulk newsletters, and dispatch transactional emails via our high-speed REST API.
+                <p className="text-slate-600 dark:text-slate-300 text-base sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed font-normal">
+                  Stop overpaying for Google Workspace or Microsoft 365. Host unlimited mailboxes on your own VPS with automatic DKIM cryptographic signing, SPF, DMARC, Gmail-style threaded Webmail, and high-speed REST API.
                 </p>
 
-                <div className="flex items-center justify-center gap-4 pt-4 flex-wrap">
+                <div className="flex items-center justify-center gap-4 pt-3 flex-wrap">
                   <a
                     href="#pricing"
-                    className="px-7 py-3.5 bg-[#925ce9] hover:bg-[#7e43e5] text-white text-sm font-bold rounded-xl shadow-xl shadow-[#925ce9]/35 transition-all flex items-center gap-2 transform hover:-translate-y-0.5"
+                    className="px-8 py-4 bg-[#925ce9] hover:bg-[#7e43e5] text-white text-sm font-bold rounded-xl shadow-xl shadow-[#925ce9]/35 transition-all flex items-center gap-2 transform hover:-translate-y-0.5"
                   >
-                    <span>Choose a Plan & Get Started</span>
+                    <span>View Pricing Plans & Get Started</span>
                     <ArrowRight className="w-4 h-4" />
                   </a>
                   <button
@@ -2307,130 +2308,186 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                       setAuthMode('login');
                       setAuthError('');
                     }}
-                    className="px-7 py-3.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-sm font-semibold rounded-xl transition-all shadow-md"
+                    className="px-8 py-4 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-sm font-semibold rounded-xl transition-all shadow-sm"
                   >
                     Sign In to Webmail
                   </button>
                 </div>
 
                 {/* TRUST BADGES ROW */}
-                <div className="pt-8 flex flex-wrap items-center justify-center gap-8 text-xs text-slate-400 font-medium">
+                <div className="pt-6 flex flex-wrap items-center justify-center gap-6 sm:gap-8 text-xs text-slate-600 dark:text-slate-400 font-medium">
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>Postfix SMTP & Dovecot IMAP</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    <span>100% Primary Inbox Deliverability</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-[#925ce9]" />
-                    <span>Auto SPF, DKIM & DMARC</span>
+                    <span>Auto 2048-bit RSA DKIM Signing</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-blue-400" />
-                    <span>REST API (No SMTP Library Needed)</span>
+                    <CheckCircle2 className="w-4 h-4 text-blue-500" />
+                    <span>REST API (JSON over HTTPS)</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-amber-400" />
-                    <span>99.99% Server Uptime Guarantee</span>
+                    <CheckCircle2 className="w-4 h-4 text-amber-500" />
+                    <span>Cloudflare 1-Click DNS Sync</span>
+                  </div>
+                </div>
+
+                {/* RICH INTERACTIVE WEBMAIL UI PREVIEW MOCKUP */}
+                <div className="mt-12 relative rounded-2xl p-2 sm:p-3 bg-gradient-to-b from-[#925ce9]/20 via-slate-200 to-transparent dark:from-[#925ce9]/30 dark:via-slate-800/40 dark:to-transparent border border-slate-300 dark:border-slate-800 shadow-2xl overflow-hidden">
+                  <div className="rounded-xl overflow-hidden bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-left">
+                    {/* Mock Browser Header */}
+                    <div className="px-4 py-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-rose-500/80"></div>
+                        <div className="w-3 h-3 rounded-full bg-amber-500/80"></div>
+                        <div className="w-3 h-3 rounded-full bg-emerald-500/80"></div>
+                        <span className="text-[11px] font-mono text-slate-500 ml-2">https://mail.kidukart.com/inbox</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                        <span>Postfix + Dovecot Live</span>
+                      </div>
+                    </div>
+                    {/* Mock Inbox Thread View */}
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="space-y-2 border-r border-slate-200 dark:border-slate-800/80 pr-4 hidden md:block">
+                        <div className="p-2.5 rounded-lg bg-[#925ce9]/10 border-l-2 border-[#925ce9] text-xs">
+                          <div className="font-bold text-slate-900 dark:text-white flex justify-between">
+                            <span>Foysal Chowdhury</span>
+                            <span className="text-[10px] text-slate-400">16:35</span>
+                          </div>
+                          <div className="text-slate-600 dark:text-slate-300 font-medium truncate mt-0.5">Re: Order Confirmation #1092</div>
+                          <div className="text-[11px] text-slate-400 truncate">Twstint to mobike 2...</div>
+                        </div>
+                        <div className="p-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900/40 text-xs">
+                          <div className="font-bold text-slate-800 dark:text-slate-200 flex justify-between">
+                            <span>Google Cloud Billing</span>
+                            <span className="text-[10px] text-slate-400">Yesterday</span>
+                          </div>
+                          <div className="text-slate-500 truncate mt-0.5">Your monthly invoice is ready</div>
+                        </div>
+                      </div>
+                      <div className="md:col-span-2 space-y-4">
+                        <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
+                          <h3 className="text-base font-bold text-slate-900 dark:text-white">Order Confirmation #1092</h3>
+                          <p className="text-xs text-slate-500">2 messages in conversation • DKIM signed via mail.kidukart.com</p>
+                        </div>
+                        <div className="bg-slate-50 dark:bg-slate-900/60 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-full bg-[#925ce9] text-white flex items-center justify-center font-bold text-xs">F</div>
+                              <span className="text-xs font-bold text-slate-900 dark:text-white">Foysal Chowdhury</span>
+                            </div>
+                            <span className="text-[11px] text-slate-400">16:35 (Just now)</span>
+                          </div>
+                          <p className="text-xs text-slate-700 dark:text-slate-200">Thank you for your order! Your payment was successful.</p>
+                          <div className="inline-block px-2 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded text-[10px] font-mono">••• Quoted History</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* 2. LIVE PLATFORM METRICS SHOWCASE */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-slate-900/90 border border-slate-800/90 p-6 rounded-2xl text-center space-y-1 shadow-lg hover:border-[#925ce9]/40 transition-all">
-                  <span className="text-3xl sm:text-4xl font-black text-white font-mono">100%</span>
-                  <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Cloudflare Compatible</p>
+                <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/90 p-6 rounded-2xl text-center space-y-1 shadow-md dark:shadow-lg hover:border-[#925ce9]/40 transition-all">
+                  <span className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white font-mono">100%</span>
+                  <p className="text-xs text-slate-700 dark:text-slate-300 font-semibold uppercase tracking-wider">Cloudflare Compatible</p>
                   <p className="text-[11px] text-slate-500">Zero IP conflicts with origin</p>
                 </div>
-                <div className="bg-slate-900/90 border border-slate-800/90 p-6 rounded-2xl text-center space-y-1 shadow-lg hover:border-[#925ce9]/40 transition-all">
+                <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/90 p-6 rounded-2xl text-center space-y-1 shadow-md dark:shadow-lg hover:border-[#925ce9]/40 transition-all">
                   <span className="text-3xl sm:text-4xl font-black text-[#925ce9] font-mono">15ms</span>
-                  <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">REST API Dispatch</p>
+                  <p className="text-xs text-slate-700 dark:text-slate-300 font-semibold uppercase tracking-wider">REST API Dispatch</p>
                   <p className="text-[11px] text-slate-500">Instant transactional delivery</p>
                 </div>
-                <div className="bg-slate-900/90 border border-slate-800/90 p-6 rounded-2xl text-center space-y-1 shadow-lg hover:border-[#925ce9]/40 transition-all">
-                  <span className="text-3xl sm:text-4xl font-black text-emerald-400 font-mono">100%</span>
-                  <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Isolated Storage</p>
+                <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/90 p-6 rounded-2xl text-center space-y-1 shadow-md dark:shadow-lg hover:border-[#925ce9]/40 transition-all">
+                  <span className="text-3xl sm:text-4xl font-black text-emerald-600 dark:text-emerald-400 font-mono">100%</span>
+                  <p className="text-xs text-slate-700 dark:text-slate-300 font-semibold uppercase tracking-wider">Isolated Storage</p>
                   <p className="text-[11px] text-slate-500">Encrypted Maildir architecture</p>
                 </div>
-                <div className="bg-slate-900/90 border border-slate-800/90 p-6 rounded-2xl text-center space-y-1 shadow-lg hover:border-[#925ce9]/40 transition-all">
-                  <span className="text-3xl sm:text-4xl font-black text-amber-400 font-mono">24/7</span>
-                  <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Multi-Tenant Engine</p>
+                <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/90 p-6 rounded-2xl text-center space-y-1 shadow-md dark:shadow-lg hover:border-[#925ce9]/40 transition-all">
+                  <span className="text-3xl sm:text-4xl font-black text-amber-500 font-mono">24/7</span>
+                  <p className="text-xs text-slate-700 dark:text-slate-300 font-semibold uppercase tracking-wider">Multi-Tenant Engine</p>
                   <p className="text-[11px] text-slate-500">Super admin billing & oversight</p>
                 </div>
               </div>
 
               {/* 3. SIX CORE FEATURE MODULES (EXPANDED GRID) */}
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div className="text-center space-y-2 max-w-2xl mx-auto">
                   <span className="text-xs font-bold uppercase tracking-widest text-[#925ce9] bg-[#925ce9]/10 px-3 py-1 rounded-full border border-[#925ce9]/20">
                     Enterprise Capabilities
                   </span>
-                  <h2 className="text-3xl font-extrabold text-white">Engineered for Reliability & Scale</h2>
-                  <p className="text-xs text-slate-400">Everything your business needs for communications, security, and developer integrations.</p>
+                  <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">Engineered for Reliability & Scale</h2>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">Everything your business needs for communications, security, and developer integrations.</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {/* Feature 1 */}
-                  <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl hover:border-[#925ce9]/50 transition-all shadow-lg space-y-3 group">
+                  <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl hover:border-[#925ce9]/50 transition-all shadow-md dark:shadow-lg space-y-3 group">
                     <div className="w-12 h-12 rounded-xl bg-[#925ce9]/10 text-[#925ce9] flex items-center justify-center border border-[#925ce9]/20 group-hover:scale-110 transition-transform">
                       <Globe className="w-6 h-6" />
                     </div>
-                    <h3 className="text-lg font-bold text-white group-hover:text-[#925ce9] transition-colors">Custom Domain Freedom</h3>
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-[#925ce9] transition-colors">Custom Domain Freedom</h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                       Add, edit, and delete company domains without touching your main server IP. Generates 1-click Cloudflare DNS records (MX, TXT SPF, DKIM & DMARC).
                     </p>
                   </div>
 
                   {/* Feature 2 */}
-                  <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl hover:border-[#925ce9]/50 transition-all shadow-lg space-y-3 group">
-                    <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 group-hover:scale-110 transition-transform">
+                  <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl hover:border-[#925ce9]/50 transition-all shadow-md dark:shadow-lg space-y-3 group">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 group-hover:scale-110 transition-transform">
                       <Terminal className="w-6 h-6" />
                     </div>
-                    <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors">REST API & SDKs (v1)</h3>
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-emerald-500 transition-colors">REST API & SDKs (v1)</h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                       Send transactional emails directly from Next.js, Node.js, Python, or PHP with a simple HTTP POST request. No complex SMTP credentials required in code.
                     </p>
                   </div>
 
                   {/* Feature 3 */}
-                  <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl hover:border-[#925ce9]/50 transition-all shadow-lg space-y-3 group">
-                    <div className="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20 group-hover:scale-110 transition-transform">
+                  <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl hover:border-[#925ce9]/50 transition-all shadow-md dark:shadow-lg space-y-3 group">
+                    <div className="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center border border-purple-500/20 group-hover:scale-110 transition-transform">
                       <HardDrive className="w-6 h-6" />
                     </div>
-                    <h3 className="text-lg font-bold text-white group-hover:text-purple-400 transition-colors">Typable Storage Quotas</h3>
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-purple-500 transition-colors">Typable Storage Quotas</h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                       Type exact custom storage allocations in MB or GB for each employee mailbox with automatic plan ceiling limits and realtime usage monitoring.
                     </p>
                   </div>
 
                   {/* Feature 4 */}
-                  <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl hover:border-[#925ce9]/50 transition-all shadow-lg space-y-3 group">
-                    <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20 group-hover:scale-110 transition-transform">
+                  <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl hover:border-[#925ce9]/50 transition-all shadow-md dark:shadow-lg space-y-3 group">
+                    <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20 group-hover:scale-110 transition-transform">
                       <Sparkles className="w-6 h-6" />
                     </div>
-                    <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">Bulk Campaigns & Contact Groups</h3>
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-amber-500 transition-colors">Bulk Campaigns & Contact Groups</h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                       Import CSV contact lists, organize target groups, and send personalized marketing newsletters with dynamic template tags like {"{{name}}"} and {"{{company}}"}.
                     </p>
                   </div>
 
                   {/* Feature 5 */}
-                  <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl hover:border-[#925ce9]/50 transition-all shadow-lg space-y-3 group">
-                    <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20 group-hover:scale-110 transition-transform">
+                  <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl hover:border-[#925ce9]/50 transition-all shadow-md dark:shadow-lg space-y-3 group">
+                    <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20 group-hover:scale-110 transition-transform">
                       <ShieldCheck className="w-6 h-6" />
                     </div>
-                    <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Granular Role Permissions</h3>
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-500 transition-colors">Granular Role Permissions</h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                       Define custom team roles with granular CRUD checkboxes for Email Templates, Custom Domains, Mailboxes, REST API access, and Mailbox Switching.
                     </p>
                   </div>
 
                   {/* Feature 6 */}
-                  <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl hover:border-[#925ce9]/50 transition-all shadow-lg space-y-3 group">
-                    <div className="w-12 h-12 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center border border-rose-500/20 group-hover:scale-110 transition-transform">
+                  <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl hover:border-[#925ce9]/50 transition-all shadow-md dark:shadow-lg space-y-3 group">
+                    <div className="w-12 h-12 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20 group-hover:scale-110 transition-transform">
                       <FileText className="w-6 h-6" />
                     </div>
-                    <h3 className="text-lg font-bold text-white group-hover:text-rose-400 transition-colors">HTML Signature & Templates</h3>
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-rose-500 transition-colors">HTML Signature & Templates</h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                       Design rich HTML email signatures with company logos, social links, and custom styles, plus reusable category-tagged email templates.
                     </p>
                   </div>
@@ -2438,12 +2495,12 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </div>
 
               {/* 4. HOW IT WORKS (3-STEP ONBOARDING WALKTHROUGH) */}
-              <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-8 sm:p-12 space-y-8">
+              <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-3xl p-8 sm:p-12 space-y-8 shadow-sm">
                 <div className="text-center space-y-2">
-                  <span className="text-xs font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                  <span className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
                     Quick Setup Guide
                   </span>
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-white">Get Your Mail Server Running in 3 Minutes</h2>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">Get Your Mail Server Running in 3 Minutes</h2>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
@@ -2451,8 +2508,8 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     <div className="w-10 h-10 rounded-full bg-[#925ce9] text-white flex items-center justify-center font-bold text-base shadow-lg shadow-[#925ce9]/40">
                       1
                     </div>
-                    <h3 className="text-base font-bold text-white">Select Plan & Register</h3>
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Select Plan & Register</h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                       Choose your company package, provide business info, and submit your registration.
                     </p>
                   </div>
@@ -2461,8 +2518,8 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     <div className="w-10 h-10 rounded-full bg-[#925ce9] text-white flex items-center justify-center font-bold text-base shadow-lg shadow-[#925ce9]/40">
                       2
                     </div>
-                    <h3 className="text-base font-bold text-white">Connect Custom Domain</h3>
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Connect Custom Domain</h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                       Add your domain (e.g. brand.com) and copy the generated Cloudflare DNS records (MX, SPF, DKIM).
                     </p>
                   </div>
@@ -2471,8 +2528,8 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                     <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-base shadow-lg shadow-emerald-600/40">
                       3
                     </div>
-                    <h3 className="text-base font-bold text-white">Create Mailboxes & Send</h3>
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Create Mailboxes & Send</h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                       Create employee email addresses, set individual signatures, and start sending via Webmail or REST API.
                     </p>
                   </div>
@@ -2485,8 +2542,8 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                   <span className="text-xs font-bold uppercase tracking-widest text-[#925ce9] bg-[#925ce9]/10 px-3 py-1 rounded-full border border-[#925ce9]/20">
                     Transparent SaaS Pricing
                   </span>
-                  <h2 className="text-3xl font-extrabold text-white">Choose the Right Plan for Your Business</h2>
-                  <p className="text-xs text-slate-400">Scale your communication infrastructure effortlessly with zero lock-in contracts.</p>
+                  <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">Choose the Right Plan for Your Business</h2>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">Scale your communication infrastructure effortlessly with zero lock-in contracts.</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -2496,10 +2553,10 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                       <div
                         key={plan.id}
                         onClick={() => setSelectedPlanForRegistration(plan)}
-                        className={`bg-slate-900 rounded-2xl p-7 border cursor-pointer transition-all flex flex-col justify-between relative ${
+                        className={`bg-white dark:bg-slate-900 rounded-2xl p-7 border cursor-pointer transition-all flex flex-col justify-between relative shadow-sm ${
                           isSelected
-                            ? 'border-[#925ce9] ring-2 ring-[#925ce9]/50 shadow-2xl shadow-[#925ce9]/25 bg-slate-900'
-                            : 'border-slate-800 hover:border-slate-700'
+                            ? 'border-[#925ce9] ring-2 ring-[#925ce9]/50 shadow-2xl shadow-[#925ce9]/25'
+                            : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                         }`}
                       >
                         {plan.price_monthly > 15 && (
@@ -2510,32 +2567,32 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
 
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-xl font-bold text-white">{plan.name}</h3>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">{plan.name}</h3>
                             {isSelected && <Check className="w-5 h-5 text-[#925ce9]" />}
                           </div>
                           <div className="mt-2 mb-6">
-                            <span className="text-4xl font-extrabold text-white">${plan.price_monthly}</span>
-                            <span className="text-xs text-slate-400"> / month</span>
+                            <span className="text-4xl font-extrabold text-slate-900 dark:text-white">${plan.price_monthly}</span>
+                            <span className="text-xs text-slate-500"> / month</span>
                           </div>
-                          <ul className="space-y-3.5 text-xs text-slate-300">
+                          <ul className="space-y-3.5 text-xs text-slate-700 dark:text-slate-300">
                             <li className="flex items-center gap-2.5">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                               <span>Max <strong>{plan.max_domains}</strong> Custom Domain(s)</span>
                             </li>
                             <li className="flex items-center gap-2.5">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                               <span>Max <strong>{plan.max_mailboxes}</strong> User Accounts</span>
                             </li>
                             <li className="flex items-center gap-2.5">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                               <span><strong>{plan.storage_quota_mb / 1024} GB</strong> Cloud Storage</span>
                             </li>
                             <li className="flex items-center gap-2.5">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                               <span><strong>{plan.bulk_mail_daily_limit}</strong> Bulk Emails/day</span>
                             </li>
-                            <li className="flex items-center gap-2.5 text-slate-400">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <li className="flex items-center gap-2.5 text-slate-500">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                               <span>REST API & Webhooks Access</span>
                             </li>
                           </ul>
@@ -2551,7 +2608,7 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
                           className={`w-full mt-8 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                             isSelected
                               ? 'bg-[#925ce9] hover:bg-[#7e43e5] text-white shadow-lg shadow-[#925ce9]/30'
-                              : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+                              : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200'
                           }`}
                         >
                           <span>Select Plan & Continue</span>
@@ -2566,37 +2623,37 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               {/* 6. FREQUENTLY ASKED QUESTIONS (FAQ) */}
               <div className="max-w-4xl mx-auto space-y-6">
                 <div className="text-center space-y-2">
-                  <span className="text-xs font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
+                  <span className="text-xs font-bold uppercase tracking-widest text-[#925ce9] bg-[#925ce9]/10 px-3 py-1 rounded-full border border-[#925ce9]/20">
                     Got Questions?
                   </span>
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-white">Frequently Asked Questions</h2>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">Frequently Asked Questions</h2>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-2">
-                    <h4 className="text-sm font-bold text-white">Can I keep my website on my current server/cPanel?</h4>
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl space-y-2 shadow-sm">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Can I keep my website on my current server/cPanel?</h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                       Yes! You simply point your domain&apos;s MX and SPF DNS records to this mail platform. Your website IP and hosting remain 100% unaffected.
                     </p>
                   </div>
 
-                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-2">
-                    <h4 className="text-sm font-bold text-white">How does the REST API work without SMTP?</h4>
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl space-y-2 shadow-sm">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">How does the REST API work without SMTP?</h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                       You generate an API Key under the Email REST API tab. Your frontend/backend code makes an HTTP POST request to <code>/api/v1/send</code> with JSON payload.
                     </p>
                   </div>
 
-                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-2">
-                    <h4 className="text-sm font-bold text-white">Can users have individual HTML signatures?</h4>
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl space-y-2 shadow-sm">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Can users have individual HTML signatures?</h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                       Yes! Each mailbox account can have its own dedicated HTML or plaintext email signature, plus company-wide branding footers.
                     </p>
                   </div>
 
-                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-2">
-                    <h4 className="text-sm font-bold text-white">How are storage space quotas managed?</h4>
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl space-y-2 shadow-sm">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">How are storage space quotas managed?</h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                       Company administrators can allocate specific MB or GB to each employee account, up to the total limit of their active subscription package.
                     </p>
                   </div>
@@ -2604,16 +2661,16 @@ _dmarc.${domainName}. 300    IN    TXT    "v=DMARC1; p=none; sp=none;"
               </div>
 
               {/* 7. ENTERPRISE FOOTER */}
-              <div className="border-t border-slate-800/80 pt-8 pb-4 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+              <div className="border-t border-slate-200 dark:border-slate-800/80 pt-8 pb-4 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-500">
                 <div className="flex items-center gap-3">
                   <div className="w-7 h-7 rounded-lg bg-[#925ce9] flex items-center justify-center text-white">
                     <Mail className="w-4 h-4" />
                   </div>
-                  <span className="font-bold text-white">MailBox Pro Enterprise</span>
+                  <span className="font-bold text-slate-800 dark:text-white">MailBox Pro Enterprise</span>
                   <span>•</span>
                   <span>All Rights Reserved &copy; 2026</span>
                 </div>
-                <div className="flex items-center gap-4 text-slate-400 text-xs">
+                <div className="flex items-center gap-4 text-slate-500 text-xs">
                   <span>🔒 TLS 1.3 Encryption</span>
                   <span>•</span>
                   <span>🛡️ Anti-Spam Protected</span>
